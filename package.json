@@ -8,6 +8,11 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "db:up": "docker compose -f docker/docker-compose.yml up -d",
     "db:down": "docker compose -f docker/docker-compose.yml down",
-    "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d"
+    "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d",
+    "db:generate": "pnpm --filter webserver db:generate",
+    "db:migrate": "pnpm --filter webserver db:migrate",
+    "db:push": "pnpm --filter webserver db:push",
+    "db:studio": "pnpm --filter webserver db:studio",
+    "db:seed": "pnpm --filter webserver db:seed"
   }
 }

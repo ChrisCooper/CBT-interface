@@ -1,36 +1,35 @@
 import { initTRPC } from "@trpc/server";
 import { z } from "zod";
-import { CreatePostSchema, type Post, type User } from "shared";
+import { eq } from "drizzle-orm";
+import { CreatePostSchema } from "shared";
+import { db } from "./db/index.js";
+import { users, posts } from "./db/schema.js";
 
 const t = initTRPC.create();
 
-const users: User[] = [
-  { id: "1", name: "Alice", email: "alice@example.com" },
-  { id: "2", name: "Bob", email: "bob@example.com" },
-];
-
-const posts: Post[] = [
-  { id: "1", title: "Hello World", content: "First post!", authorId: "1" },
-];
-
 export const appRouter = t.router({
   user: t.router({
-    list: t.procedure.query(() => users),
+    list: t.procedure.query(() => db.select().from(users)),
 
     byId: t.procedure
-      .input(z.object({ id: z.string() }))
-      .query(({ input }) => {
-        return users.find((u) => u.id === input.id) ?? null;
+      .input(z.object({ id: z.string().uuid() }))
+      .query(async ({ input }) => {
+        const rows = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, input.id));
+        return rows[0] ?? null;
       }),
   }),
 
   post: t.router({
-    list: t.procedure.query(() => posts),
+    list: t.procedure.query(() =>
+      db.select().from(posts).orderBy(posts.createdAt),
+    ),
 
-    create: t.procedure.input(CreatePostSchema).mutation(({ input }) => {
-      const post: Post = { ...input, id: String(posts.length + 1) };
-      posts.push(post);
-      return post;
+    create: t.procedure.input(CreatePostSchema).mutation(async ({ input }) => {
+      const rows = await db.insert(posts).values(input).returning();
+      return rows[0]!;
     }),
   }),
 });

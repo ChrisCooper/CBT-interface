@@ -12,12 +12,13 @@ export function App() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [authorId, setAuthorId] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim() || !authorId) return;
     createPost.mutate(
-      { title, content, authorId: "1" },
+      { title, content, authorId },
       {
         onSuccess: () => {
           setTitle("");
@@ -69,6 +70,18 @@ export function App() {
             New Post
           </h2>
           <form onSubmit={handleSubmit} className="space-y-3">
+            <select
+              value={authorId}
+              onChange={(e) => setAuthorId(e.target.value)}
+              className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select author…</option>
+              {users.data?.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
             <input
               type="text"
               placeholder="Title"
@@ -85,7 +98,7 @@ export function App() {
             />
             <button
               type="submit"
-              disabled={createPost.isPending}
+              disabled={createPost.isPending || !authorId}
               className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {createPost.isPending ? "Creating..." : "Create Post"}
