@@ -9,6 +9,8 @@
     "db:up": "docker compose -f docker/docker-compose.yml up -d",
     "db:down": "docker compose -f docker/docker-compose.yml down",
     "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d",
+    "db:nuke": "pnpm db:reset && pnpm db:wait && pnpm db:migrate && pnpm db:seed",
+    "db:wait": "until pg_isready -h localhost -p 5432 -U dev 2>/dev/null; do sleep 0.5; done",
     "db:generate": "pnpm --filter webserver db:generate",
     "db:migrate": "pnpm --filter webserver db:migrate",
     "db:push": "pnpm --filter webserver db:push",
