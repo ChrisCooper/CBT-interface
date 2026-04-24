@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { trpc } from "./trpc";
+import { QueryErrorDisplay } from "./ErrorBoundary";
 
 function useServerUptime() {
   const [uptime, setUptime] = useState<{
@@ -104,6 +105,7 @@ export function App() {
         <section>
           <h2 className="mb-3 text-xl font-semibold text-gray-800">Users</h2>
           {users.isLoading && <p className="text-gray-500">Loading...</p>}
+          {users.isError && <QueryErrorDisplay error={users.error} />}
           <ul className="space-y-2">
             {users.data?.map((user) => (
               <li
@@ -120,6 +122,7 @@ export function App() {
         <section>
           <h2 className="mb-3 text-xl font-semibold text-gray-800">Posts</h2>
           {posts.isLoading && <p className="text-gray-500">Loading...</p>}
+          {posts.isError && <QueryErrorDisplay error={posts.error} />}
           <ul className="space-y-2">
             {posts.data?.map((post) => (
               <li

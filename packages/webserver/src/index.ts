@@ -33,6 +33,9 @@ app.use(
   "/trpc",
   createExpressMiddleware({
     router: appRouter,
+    onError: ({ path, error }) => {
+      console.error(`tRPC error on ${path ?? "<no-path>"}:`, error);
+    },
   }),
 );
 

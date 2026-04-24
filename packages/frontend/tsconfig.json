@@ -6,7 +6,8 @@
     "rootDir": "src",
     "composite": false,
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "types": ["vite/client"]
   },
   "include": ["src"],
   "references": [{ "path": "../shared" }, { "path": "../webserver" }]
