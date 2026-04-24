@@ -6,6 +6,7 @@ import { CreatePostSchema } from "shared";
 import { db as defaultDb } from "./db/index.js";
 import * as schema from "./db/schema.js";
 import { users, posts } from "./db/schema.js";
+import { log } from "./logger.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -14,11 +15,15 @@ const t = initTRPC.create();
 export function createAppRouter(db: Database = defaultDb) {
   return t.router({
     user: t.router({
-      list: t.procedure.query(() => db.select().from(users)),
+      list: t.procedure.query(async () => {
+        log.debug("user.list called");
+        return db.select().from(users);
+      }),
 
       byId: t.procedure
         .input(z.object({ id: z.string().uuid() }))
         .query(async ({ input }) => {
+          log.debug({ userId: input.id }, "user.byId called");
           const rows = await db
             .select()
             .from(users)
@@ -28,13 +33,15 @@ export function createAppRouter(db: Database = defaultDb) {
     }),
 
     post: t.router({
-      list: t.procedure.query(() =>
-        db.select().from(posts).orderBy(posts.createdAt),
-      ),
+      list: t.procedure.query(async () => {
+        log.debug("post.list called");
+        return db.select().from(posts).orderBy(posts.createdAt);
+      }),
 
       create: t.procedure
         .input(CreatePostSchema)
         .mutation(async ({ input }) => {
+          log.info({ title: input.title, authorId: input.authorId }, "post.create called");
           const rows = await db.insert(posts).values(input).returning();
           return rows[0]!;
         }),

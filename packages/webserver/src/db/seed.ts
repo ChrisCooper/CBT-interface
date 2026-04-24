@@ -1,8 +1,9 @@
 import { db } from "./index.js";
 import { users, posts } from "./schema.js";
+import { log } from "../logger.js";
 
 async function seed() {
-  console.log("Seeding database...");
+  log.info("Seeding database...");
 
   const [alice, bob] = await db
     .insert(users)
@@ -20,11 +21,11 @@ async function seed() {
     },
   ]);
 
-  console.log("Seeded 2 users and 1 post.");
+  log.info("Seeded 2 users and 1 post.");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Seed failed:", err);
+  log.fatal(err, "Seed failed");
   process.exit(1);
 });
