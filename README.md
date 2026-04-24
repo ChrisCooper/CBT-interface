@@ -116,6 +116,44 @@ Opens a browser-based UI for browsing and editing database rows.
 | Add a dependency | `pnpm --filter <name> add <package>` |
 | Add a dev dependency | `pnpm --filter <name> add -D <package>` |
 
+## Testing
+
+### Unit Tests
+
+Unit tests live alongside the source in `__tests__/` directories (e.g. `packages/shared/src/__tests__/`). They validate pure logic like Zod schema parsing and don't need a database.
+
+### Integration Tests
+
+Backend integration tests use [PGlite](https://pglite.dev/) — a lightweight, in-process PostgreSQL that runs entirely in WebAssembly. Each test suite spins up an isolated database, applies Drizzle migrations, and exercises tRPC procedures against real SQL. No Docker or external database required.
+
+The router exposes a `createAppRouter(db)` factory so tests can inject a PGlite-backed Drizzle instance:
+
+```ts
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import * as schema from "../db/schema.js";
+import { createAppRouter } from "../router.js";
+
+const client = new PGlite();
+const db = drizzle(client, { schema });
+await migrate(db, { migrationsFolder: "<path-to>/drizzle" });
+
+const router = createAppRouter(db as any);
+const caller = router.createCaller({});
+
+// caller.user.list(), caller.post.create(...), etc.
+```
+
+Integration test files follow the naming convention `*.integration.test.ts` and live in `packages/webserver/src/__tests__/`.
+
+### Running Tests
+
+| What | Command |
+|---|---|
+| Run all tests once | `pnpm test` |
+| Run tests in watch mode | `pnpm test:watch` |
+
 ## Adding a New tRPC Procedure
 
 1. If needed, add a Zod schema in `packages/shared/src/types.ts`.

@@ -30,6 +30,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.4",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.31.10",
