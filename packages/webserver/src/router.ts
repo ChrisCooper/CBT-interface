@@ -1,6 +1,6 @@
 import { initTRPC } from "@trpc/server";
 import { z } from "zod";
-import { CreatePostSchema, type Post, type User } from "./types.js";
+import { CreatePostSchema, type Post, type User } from "shared";
 
 const t = initTRPC.create();
 

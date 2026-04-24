@@ -1,2 +1,8 @@
-export { appRouter, type AppRouter } from "./router.js";
-export { type User, type Post } from "./types.js";
+export {
+  UserSchema,
+  type User,
+  PostSchema,
+  type Post,
+  CreatePostSchema,
+  type CreatePost,
+} from "./types.js";

@@ -1,7 +1,9 @@
 import cors from "cors";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "shared";
+import { appRouter } from "./router.js";
+
+export type { AppRouter } from "./router.js";
 
 const app = express();
 
