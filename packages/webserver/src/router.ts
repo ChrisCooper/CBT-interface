@@ -1,13 +1,17 @@
 import { initTRPC } from "@trpc/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { CreatePostSchema } from "shared";
 import { db as defaultDb } from "./db/index.js";
+import * as schema from "./db/schema.js";
 import { users, posts } from "./db/schema.js";
+
+type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 const t = initTRPC.create();
 
-export function createAppRouter(db = defaultDb) {
+export function createAppRouter(db: Database = defaultDb) {
   return t.router({
     user: t.router({
       list: t.procedure.query(() => db.select().from(users)),

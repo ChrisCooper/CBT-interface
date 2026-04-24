@@ -9,7 +9,7 @@ export const trpcFixture = {
     { db }: { db: TestDb },
     use: (trpc: TestCaller) => Promise<void>,
   ) => {
-    const router = createAppRouter(db as any);
+    const router = createAppRouter(db);
     await use(router.createCaller({}));
   },
 };
