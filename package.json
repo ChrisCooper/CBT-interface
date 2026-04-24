@@ -1,0 +1,10 @@
+{
+  "name": "project-base",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "dev:webserver": "pnpm --filter webserver dev",
+    "dev:frontend": "pnpm --filter frontend dev"
+  }
+}
