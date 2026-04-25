@@ -6,16 +6,17 @@ import {
   createUIMessageStream,
   pipeUIMessageStreamToResponse,
 } from "ai";
-import { toAISdkStream } from "@mastra/ai-sdk";
 import { appRouter } from "./router.js";
 import { log } from "./logger.js";
 import { container } from "./container.js";
 import { Config } from "./config.js";
-import { chatAgent } from "./agent.js";
+import { LLM } from "./ai.js";
+import { runStep } from "./workflow.js";
 
 export type { AppRouter } from "./router.js";
 
 const config = container.resolve(Config);
+const llm = container.resolve(LLM);
 log.info({ llmEndpointHost: config.env.LLM_ENDPOINT_HOST }, "Config loaded");
 
 const app = express();
@@ -58,15 +59,29 @@ app.get("/sse/uptime", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
-    const { messages } = req.body;
-    const stream = await chatAgent.stream(messages);
+    const { messages, id: chatId = "default" } = req.body;
+
+    const lastUserMsg = [...messages]
+      .reverse()
+      .find((m: { role: string }) => m.role === "user");
+    const userText =
+      lastUserMsg?.content ??
+      lastUserMsg?.parts?.find((p: { type: string }) => p.type === "text")
+        ?.text ??
+      "";
+
+    const result = await runStep(llm.model(), chatId, userText);
 
     const uiStream = createUIMessageStream({
       originalMessages: messages,
       execute: async ({ writer }) => {
-        for await (const part of toAISdkStream(stream, { from: "agent" })) {
-          await writer.write(part);
-        }
+        writer.write({ type: "text-start", id: chatId });
+        writer.write({
+          type: "text-delta",
+          id: chatId,
+          delta: result.replyToUser,
+        });
+        writer.write({ type: "text-end", id: chatId });
       },
     });
 
