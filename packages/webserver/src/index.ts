@@ -2,10 +2,16 @@ import "reflect-metadata";
 import cors from "cors";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import {
+  createUIMessageStream,
+  pipeUIMessageStreamToResponse,
+} from "ai";
+import { toAISdkStream } from "@mastra/ai-sdk";
 import { appRouter } from "./router.js";
 import { log } from "./logger.js";
 import { container } from "./container.js";
 import { Config } from "./config.js";
+import { chatAgent } from "./agent.js";
 
 export type { AppRouter } from "./router.js";
 
@@ -48,6 +54,29 @@ app.get("/sse/uptime", (req, res) => {
     clearInterval(interval);
     log.debug("SSE uptime client disconnected");
   });
+});
+
+app.post("/chat", async (req, res) => {
+  try {
+    const { messages } = req.body;
+    const stream = await chatAgent.stream(messages);
+
+    const uiStream = createUIMessageStream({
+      originalMessages: messages,
+      execute: async ({ writer }) => {
+        for await (const part of toAISdkStream(stream, { from: "agent" })) {
+          await writer.write(part);
+        }
+      },
+    });
+
+    pipeUIMessageStreamToResponse({ response: res, stream: uiStream });
+  } catch (error) {
+    log.error({ error }, "Chat error");
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Chat failed" });
+    }
+  }
 });
 
 app.use(

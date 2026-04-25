@@ -1,116 +1,97 @@
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import Markdown from "react-markdown";
-import { trpc } from "./trpc";
-import { QueryErrorDisplay } from "./ErrorBoundary";
 
 export function App() {
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-2xl space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">Project Base</h1>
-        <QuerySection />
-      </div>
-    </div>
-  );
-}
+  const [input, setInput] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-function QuerySection() {
-  const [prompt, setPrompt] = useState("");
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const query = trpc.ai.query.useMutation();
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: "http://localhost:3000/chat",
+    }),
+  });
 
-  const handleImageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => setImageDataUrl(reader.result as string);
-      reader.readAsDataURL(file);
-    },
-    [],
-  );
+  const isLoading = status !== "ready";
 
-  const clearImage = useCallback(() => {
-    setImageDataUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!prompt.trim()) return;
-    query.mutate({
-      prompt,
-      image: imageDataUrl ?? undefined,
-    });
+    if (!input.trim() || isLoading) return;
+    sendMessage({ text: input });
+    setInput("");
   };
 
   return (
-    <section>
-      <h2 className="mb-3 text-xl font-semibold text-gray-800">
-        AI Query
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <textarea
-          placeholder="Ask anything…"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={4}
-          maxLength={8192}
-        />
+    <div className="flex h-screen flex-col bg-gray-50">
+      <header className="shrink-0 border-b bg-white px-6 py-4 shadow-sm">
+        <h1 className="text-xl font-semibold text-gray-900">Chat</h1>
+      </header>
 
-        <div className="flex items-center gap-3">
-          <label className="cursor-pointer rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700">
-            {imageDataUrl ? "Change image" : "Attach image (optional)"}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-          </label>
-          {imageDataUrl && (
-            <button
-              type="button"
-              onClick={clearImage}
-              className="text-sm text-red-600 hover:text-red-700"
-            >
-              Remove
-            </button>
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto max-w-2xl space-y-4">
+          {messages.length === 0 && (
+            <p className="py-20 text-center text-gray-400">
+              Send a message to start chatting.
+            </p>
           )}
-        </div>
 
-        {imageDataUrl && (
-          <img
-            src={imageDataUrl}
-            alt="Attached"
-            className="max-h-48 rounded-lg border object-contain"
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                  m.role === "user"
+                    ? "bg-blue-600 text-white"
+                    : "border bg-white text-gray-800 shadow-sm"
+                }`}
+              >
+                {m.parts.map((part, i) => {
+                  if (part.type !== "text") return null;
+                  if (m.role === "user") {
+                    return <p key={i}>{part.text}</p>;
+                  }
+                  return (
+                    <div key={i} className="prose prose-sm max-w-none">
+                      <Markdown>{part.text}</Markdown>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          <div ref={bottomRef} />
+        </div>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="shrink-0 border-t bg-white px-4 py-4"
+      >
+        <div className="mx-auto flex max-w-2xl gap-3">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message…"
+            disabled={isLoading}
+            className="flex-1 rounded-full border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           />
-        )}
-
-        <button
-          type="submit"
-          disabled={query.isPending || !prompt.trim()}
-          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {query.isPending ? "Querying…" : "Send Query"}
-        </button>
-      </form>
-
-      {query.isError && <QueryErrorDisplay error={query.error} />}
-
-      {query.data && (
-        <div className="mt-4 rounded-lg border bg-white px-4 py-3 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase text-gray-500">
-            Response
-          </h3>
-          <div className="prose prose-sm mt-1 max-w-none text-gray-800">
-            <Markdown>{query.data.response}</Markdown>
-          </div>
+          <button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Send
+          </button>
         </div>
-      )}
-    </section>
+      </form>
+    </div>
   );
 }
