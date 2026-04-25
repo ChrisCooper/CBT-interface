@@ -2,19 +2,24 @@ import { initTRPC } from "@trpc/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { generateObject } from "ai";
+import type { LanguageModel } from "ai";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { CreatePostSchema } from "shared";
 import { db as defaultDb } from "./db/index.js";
 import * as schema from "./db/schema.js";
 import { users, posts } from "./db/schema.js";
 import { log } from "./logger.js";
-import { model } from "./ai.js";
+import { container } from "./container.js";
+import { LLM } from "./ai.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 const t = initTRPC.create();
 
-export function createAppRouter(db: Database = defaultDb) {
+export function createAppRouter(
+  db: Database = defaultDb,
+  llm: LLM = container.resolve(LLM),
+) {
   return t.router({
     user: t.router({
       list: t.procedure.query(async () => {
@@ -56,7 +61,7 @@ export function createAppRouter(db: Database = defaultDb) {
           log.info("ai.summarize called");
 
           const { object } = await generateObject({
-            model: model(),
+            model: llm.model(),
             schema: z.object({
               summary: z.string().describe("A concise summary of the input text"),
               sentiment: z.enum(["positive", "negative", "neutral"]).describe("Overall sentiment"),

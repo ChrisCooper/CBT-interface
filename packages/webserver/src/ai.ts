@@ -1,16 +1,22 @@
+import "reflect-metadata";
+import { injectable, inject } from "tsyringe";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
-import { container } from "./container.js";
 import { Config } from "./config.js";
 
-const config = container.resolve(Config);
+@injectable()
+export class LLM {
+  private readonly provider;
 
-export const llm = createOpenAICompatible({
-  name: "llm",
-  baseURL: `${config.env.LLM_ENDPOINT_HOST}/v1`,
-  supportsStructuredOutputs: true,
-});
+  constructor(@inject(Config) private config: Config) {
+    this.provider = createOpenAICompatible({
+      name: "llm",
+      baseURL: `${config.env.LLM_ENDPOINT_HOST}/v1`,
+      supportsStructuredOutputs: true,
+    });
+  }
 
-export function model(): LanguageModel {
-  return llm(config.env.LLM_MODEL);
+  model(): LanguageModel {
+    return this.provider(this.config.env.LLM_MODEL);
+  }
 }
