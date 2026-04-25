@@ -1,30 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { trpc } from "./trpc";
 import { QueryErrorDisplay } from "./ErrorBoundary";
-
-function useServerUptime() {
-  const [uptime, setUptime] = useState<{
-    uptimeMs: number;
-    serverStartTime: number;
-  } | null>(null);
-  const [connected, setConnected] = useState(false);
-  const esRef = useRef<EventSource | null>(null);
-
-  useEffect(() => {
-    const es = new EventSource("http://localhost:3000/sse/uptime");
-    esRef.current = es;
-
-    es.onopen = () => setConnected(true);
-    es.onmessage = (event) => {
-      setUptime(JSON.parse(event.data));
-    };
-    es.onerror = () => setConnected(false);
-
-    return () => es.close();
-  }, []);
-
-  return { uptime, connected };
-}
+import { useUptimeStore } from "./stores/uptime";
+import { usePostFormStore } from "./stores/postForm";
 
 function formatUptime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -41,7 +19,12 @@ function formatUptime(ms: number): string {
 }
 
 export function App() {
-  const { uptime, connected } = useServerUptime();
+  const { uptime, connected, connect } = useUptimeStore();
+  const { title, content, authorId, setTitle, setContent, setAuthorId, reset } =
+    usePostFormStore();
+
+  useEffect(connect, [connect]);
+
   const users = trpc.user.list.useQuery();
   const posts = trpc.post.list.useQuery();
   const utils = trpc.useUtils();
@@ -50,21 +33,12 @@ export function App() {
     onSuccess: () => utils.post.list.invalidate(),
   });
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [authorId, setAuthorId] = useState("");
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim() || !authorId) return;
     createPost.mutate(
       { title, content, authorId },
-      {
-        onSuccess: () => {
-          setTitle("");
-          setContent("");
-        },
-      },
+      { onSuccess: reset },
     );
   };
 
