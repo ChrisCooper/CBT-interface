@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ModelMessage } from "ai";
 import { z } from "zod";
 import { log } from "./logger.js";
 
@@ -8,6 +8,7 @@ type Step = "collect-id" | "confirm-cancel" | "completed";
 interface SessionState {
   step: Step;
   customerId?: string;
+  history: ModelMessage[];
 }
 
 interface StepResult {
@@ -18,7 +19,7 @@ interface StepResult {
 const sessions = new Map<string, SessionState>();
 
 function getSession(chatId: string): SessionState {
-  return sessions.get(chatId) ?? { step: "collect-id" };
+  return sessions.get(chatId) ?? { step: "collect-id", history: [] };
 }
 
 function saveSession(chatId: string, state: SessionState): void {
@@ -36,6 +37,8 @@ export async function runStep(
   userMessage: string,
 ): Promise<StepResult> {
   const state = getSession(chatId);
+  state.history.push({ role: "user", content: userMessage });
+
   let result: StepResult;
 
   switch (state.step) {
@@ -54,6 +57,7 @@ export async function runStep(
       break;
   }
 
+  result.state.history.push({ role: "assistant", content: result.replyToUser });
   saveSession(chatId, result.state);
   return result;
 }
@@ -66,11 +70,13 @@ async function collectCustomerId(
   const { object } = await generateObject({
     model,
     system: SYSTEM_PROMPT,
-    prompt: `The user said: "${userMessage}"
-
-We need their Customer ID to proceed with cancellation. Customer IDs are typically alphanumeric (e.g., CUST-12345, ABC123).
-If you can identify a Customer ID in their message, extract it into extractedId.
-Otherwise, reply helpfully and ask for their Customer ID.`,
+    messages: [
+      ...state.history,
+      {
+        role: "user",
+        content: `[STEP INSTRUCTIONS: We need the Customer ID to proceed with cancellation. Customer IDs are typically alphanumeric (e.g., CUST-12345, ABC123). If you can identify a Customer ID in the latest user message, extract it into extractedId. Otherwise, reply helpfully and ask for their Customer ID.]`,
+      },
+    ],
     schema: z.object({
       extractedId: z
         .string()
@@ -91,7 +97,7 @@ Otherwise, reply helpfully and ask for their Customer ID.`,
     );
     return {
       replyToUser: object.conversationalReply,
-      state: { step: "confirm-cancel", customerId: object.extractedId },
+      state: { ...state, step: "confirm-cancel", customerId: object.extractedId },
     };
   }
 
@@ -106,11 +112,13 @@ async function confirmCancellation(
   const { object } = await generateObject({
     model,
     system: SYSTEM_PROMPT,
-    prompt: `The user has Customer ID "${state.customerId}" and we asked them to confirm cancellation.
-
-The user said: "${userMessage}"
-
-Did they explicitly confirm they want to cancel their subscription? Respond appropriately.`,
+    messages: [
+      ...state.history,
+      {
+        role: "user",
+        content: `[STEP INSTRUCTIONS: The user has Customer ID "${state.customerId}" and we previously asked them to confirm cancellation. Did they explicitly confirm they want to cancel? Respond appropriately.]`,
+      },
+    ],
     schema: z.object({
       isConfirmed: z
         .boolean()
