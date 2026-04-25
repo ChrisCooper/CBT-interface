@@ -16,7 +16,16 @@ export class LLM {
     });
   }
 
+  /** AI SDK LanguageModel — use with generateText / generateObject. */
   model(): LanguageModel {
     return this.provider(this.config.env.LLM_MODEL);
+  }
+
+  /** Mastra-native model config — use with Mastra Agent. */
+  mastraModel(): { id: `${string}/${string}`; url: string } {
+    return {
+      id: `llm/${this.config.env.LLM_MODEL}`,
+      url: `${this.config.env.LLM_ENDPOINT_HOST}/v1`,
+    };
   }
 }
