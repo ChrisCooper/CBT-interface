@@ -1,7 +1,7 @@
 import { initTRPC } from "@trpc/server";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import type { LanguageModel } from "ai";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { CreatePostSchema } from "shared";
@@ -71,6 +71,36 @@ export function createAppRouter(
           });
 
           return object;
+        }),
+
+      query: t.procedure
+        .input(
+          z.object({
+            prompt: z.string().min(1).max(8192),
+            image: z
+              .string()
+              .describe("Base64-encoded data URL (e.g. data:image/png;base64,...)")
+              .optional(),
+          }),
+        )
+        .mutation(async ({ input }) => {
+          log.info("ai.query called");
+
+          const content: Array<
+            | { type: "text"; text: string }
+            | { type: "image"; image: string }
+          > = [{ type: "text", text: input.prompt }];
+
+          if (input.image) {
+            content.push({ type: "image", image: input.image });
+          }
+
+          const { text } = await generateText({
+            model: llm.model(),
+            messages: [{ role: "user", content }],
+          });
+
+          return { response: text };
         }),
     }),
   });
