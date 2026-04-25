@@ -1,10 +1,16 @@
+import "reflect-metadata";
 import cors from "cors";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./router.js";
 import { log } from "./logger.js";
+import { container } from "./container.js";
+import { Config } from "./config.js";
 
 export type { AppRouter } from "./router.js";
+
+const config = container.resolve(Config);
+log.info({ llmEndpointHost: config.env.LLM_ENDPOINT_HOST }, "Config loaded");
 
 const app = express();
 const serverStartTime = Date.now();
