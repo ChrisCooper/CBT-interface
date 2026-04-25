@@ -31,6 +31,11 @@ function saveSession(chatId: string, state: SessionState): void {
 const SYSTEM_PROMPT = `You are a polite, empathetic customer support assistant helping users cancel their subscription.
 If the user asks unrelated questions, answer them briefly but ALWAYS gently steer the conversation back to the cancellation process.`;
 
+/** Strip model-specific reasoning/channel tokens that leak into raw text output. */
+function stripThinkingTokens(text: string): string {
+  return text.replace(/<\|channel>.*?<channel\|>/gs, "").trim();
+}
+
 export async function runStep(
   model: LanguageModel,
   chatId: string,
@@ -106,12 +111,12 @@ async function collectCustomerId(
     const customerId = (verifyCall.input as { customerId: string }).customerId;
     log.info({ extractedId: customerId }, "Customer ID verified");
     return {
-      replyToUser: result.text,
+      replyToUser: stripThinkingTokens(result.text),
       state: { ...state, step: "confirm-cancel", customerId },
     };
   }
 
-  return { replyToUser: result.text, state };
+  return { replyToUser: stripThinkingTokens(result.text), state };
 }
 
 async function confirmCancellation(
@@ -155,10 +160,10 @@ async function confirmCancellation(
   if (cancelOutput?.isConfirmed) {
     log.info({ customerId }, "Cancellation confirmed");
     return {
-      replyToUser: result.text,
+      replyToUser: stripThinkingTokens(result.text),
       state: { ...state, step: "completed" },
     };
   }
 
-  return { replyToUser: result.text, state };
+  return { replyToUser: stripThinkingTokens(result.text), state };
 }
