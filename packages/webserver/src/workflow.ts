@@ -1,7 +1,8 @@
-import { generateObject } from "ai";
+import { generateText, tool, stepCountIs } from "ai";
 import type { LanguageModel, ModelMessage } from "ai";
 import { z } from "zod";
 import { log } from "./logger.js";
+import { verifyCustomerId, processCancellation } from "./service_stubs.js";
 
 type Step = "collect-id" | "confirm-cancel" | "completed";
 
@@ -28,8 +29,7 @@ function saveSession(chatId: string, state: SessionState): void {
 }
 
 const SYSTEM_PROMPT = `You are a polite, empathetic customer support assistant helping users cancel their subscription.
-If the user asks unrelated questions, answer them briefly but ALWAYS gently steer the conversation back to the cancellation process.
-You MUST respond with valid JSON matching the requested schema.`;
+If the user asks unrelated questions, answer them briefly but ALWAYS gently steer the conversation back to the cancellation process.`;
 
 export async function runStep(
   model: LanguageModel,
@@ -67,41 +67,51 @@ async function collectCustomerId(
   state: SessionState,
   userMessage: string,
 ): Promise<StepResult> {
-  const { object } = await generateObject({
+  const result = await generateText({
     model,
     system: SYSTEM_PROMPT,
     messages: [
       ...state.history,
       {
         role: "user",
-        content: `[STEP INSTRUCTIONS: We need the Customer ID to proceed with cancellation. Customer IDs are typically alphanumeric (e.g., CUST-12345, ABC123). If you can identify a Customer ID in the latest user message, extract it into extractedId. Otherwise, reply helpfully and ask for their Customer ID.]`,
+        content: `[STEP INSTRUCTIONS: We need the Customer ID to proceed with cancellation. Customer IDs are typically alphanumeric (e.g., CUST-12345, ABC123). If you can identify a Customer ID in the latest user message, call the verify_customer_id tool to check it. Otherwise, reply helpfully and ask for their Customer ID.]`,
       },
     ],
-    schema: z.object({
-      extractedId: z
-        .string()
-        .nullable()
-        .describe(
-          "The customer ID if found in the user's message, or null if not found",
-        ),
-      conversationalReply: z
-        .string()
-        .describe("A friendly, helpful reply to the user"),
-    }),
+    tools: {
+      verify_customer_id: tool({
+        description:
+          "Verify a customer ID. Call this when the user provides what appears to be their customer ID.",
+        inputSchema: z.object({
+          customerId: z
+            .string()
+            .describe("The customer ID extracted from the user's message"),
+        }),
+        execute: async ({ customerId }) => verifyCustomerId(customerId),
+      }),
+    },
+    stopWhen: stepCountIs(3),
   });
 
-  if (object.extractedId) {
-    log.info(
-      { chatId: state, extractedId: object.extractedId },
-      "Customer ID extracted",
-    );
+  const verifyCall = result.steps
+    .flatMap((s) => s.toolCalls)
+    .find((c) => c.toolName === "verify_customer_id");
+
+  const verifyResult = result.steps
+    .flatMap((s) => s.toolResults)
+    .find((r) => r.toolName === "verify_customer_id");
+
+  const output = verifyResult?.output as { isValid: boolean; message: string } | undefined;
+
+  if (output?.isValid && verifyCall) {
+    const customerId = (verifyCall.input as { customerId: string }).customerId;
+    log.info({ extractedId: customerId }, "Customer ID verified");
     return {
-      replyToUser: object.conversationalReply,
-      state: { ...state, step: "confirm-cancel", customerId: object.extractedId },
+      replyToUser: result.text,
+      state: { ...state, step: "confirm-cancel", customerId },
     };
   }
 
-  return { replyToUser: object.conversationalReply, state };
+  return { replyToUser: result.text, state };
 }
 
 async function confirmCancellation(
@@ -109,35 +119,46 @@ async function confirmCancellation(
   state: SessionState,
   userMessage: string,
 ): Promise<StepResult> {
-  const { object } = await generateObject({
+  const customerId = state.customerId!;
+
+  const result = await generateText({
     model,
     system: SYSTEM_PROMPT,
     messages: [
       ...state.history,
       {
         role: "user",
-        content: `[STEP INSTRUCTIONS: The user has Customer ID "${state.customerId}" and we previously asked them to confirm cancellation. Did they explicitly confirm they want to cancel? Respond appropriately.]`,
+        content: `[STEP INSTRUCTIONS: The user has verified Customer ID "${customerId}" and we need them to confirm cancellation. If they explicitly confirm they want to cancel, call the process_cancellation tool. Otherwise, ask them to confirm.]`,
       },
     ],
-    schema: z.object({
-      isConfirmed: z
-        .boolean()
-        .describe(
-          "true if the user explicitly confirmed cancellation, false otherwise",
-        ),
-      conversationalReply: z
-        .string()
-        .describe("A friendly, helpful reply to the user"),
-    }),
+    tools: {
+      process_cancellation: tool({
+        description:
+          "Process the subscription cancellation for the verified customer. Call this only when the user has explicitly confirmed they want to cancel.",
+        inputSchema: z.object({
+          customerId: z
+            .string()
+            .describe("The verified customer ID"),
+        }),
+        execute: async ({ customerId }) => processCancellation(customerId),
+      }),
+    },
+    stopWhen: stepCountIs(3),
   });
 
-  if (object.isConfirmed) {
-    log.info({ customerId: state.customerId }, "Cancellation confirmed");
+  const cancelResult = result.steps
+    .flatMap((s) => s.toolResults)
+    .find((r) => r.toolName === "process_cancellation");
+
+  const cancelOutput = cancelResult?.output as { isConfirmed: boolean; message: string } | undefined;
+
+  if (cancelOutput?.isConfirmed) {
+    log.info({ customerId }, "Cancellation confirmed");
     return {
-      replyToUser: object.conversationalReply,
+      replyToUser: result.text,
       state: { ...state, step: "completed" },
     };
   }
 
-  return { replyToUser: object.conversationalReply, state };
+  return { replyToUser: result.text, state };
 }
