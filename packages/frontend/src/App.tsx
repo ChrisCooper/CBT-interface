@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import Markdown from "react-markdown";
 import { trpc } from "./trpc";
 import { QueryErrorDisplay } from "./ErrorBoundary";
 
@@ -105,9 +106,9 @@ function QuerySection() {
           <h3 className="text-sm font-semibold uppercase text-gray-500">
             Response
           </h3>
-          <p className="mt-1 whitespace-pre-wrap text-gray-800">
-            {query.data.response}
-          </p>
+          <div className="prose prose-sm mt-1 max-w-none text-gray-800">
+            <Markdown>{query.data.response}</Markdown>
+          </div>
         </div>
       )}
     </section>
