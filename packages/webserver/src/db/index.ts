@@ -4,7 +4,7 @@ import * as schema from "./schema.js";
 import { log } from "../logger.js";
 
 const connectionString =
-  process.env.DATABASE_URL ?? "postgresql://dev:dev@localhost:5432/project_base";
+  process.env.DATABASE_URL ?? "postgresql://dev:dev@localhost:5432/cbt";
 
 log.info({ host: new URL(connectionString).host }, "Connecting to database");
 

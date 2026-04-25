@@ -7,6 +7,6 @@ export default defineConfig({
   dbCredentials: {
     url:
       process.env.DATABASE_URL ??
-      "postgresql://dev:dev@localhost:5432/project_base",
+      "postgresql://dev:dev@localhost:5432/cbt",
   },
 });

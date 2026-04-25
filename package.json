@@ -1,5 +1,5 @@
 {
-  "name": "project-base",
+  "name": "cbt",
   "private": true,
   "scripts": {
     "dev": "pnpm -r --parallel dev",

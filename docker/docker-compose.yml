@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: project_base
+      POSTGRES_DB: cbt
     volumes:
       - pgdata:/var/lib/postgresql/data
 

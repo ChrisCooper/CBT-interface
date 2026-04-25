@@ -1,11 +1,11 @@
-# Project Base
+# CBT
 
 A TypeScript monorepo with an Express backend, React/Tailwind frontend, and a shared library. The frontend and backend communicate via [tRPC](https://trpc.io/) for end-to-end type safety. Data is persisted to PostgreSQL using [Drizzle ORM](https://orm.drizzle.team/).
 
 ## Project Structure
 
 ```
-project-base/
+cbt/
 ├── docker/
 │   └── docker-compose.yml   Dev PostgreSQL database
 ├── packages/
@@ -60,9 +60,9 @@ A Docker Compose setup in `docker/` provides a local PostgreSQL 17 instance. It 
 | Port | `5432` |
 | User | `dev` |
 | Password | `dev` |
-| Database | `project_base` |
+| Database | `cbt` |
 
-Connection string: `postgresql://dev:dev@localhost:5432/project_base`
+Connection string: `postgresql://dev:dev@localhost:5432/cbt`
 
 Override the connection string by setting the `DATABASE_URL` environment variable.
 
