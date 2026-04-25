@@ -8,6 +8,7 @@ const config = container.resolve(Config);
 export const llm = createOpenAICompatible({
   name: "llm",
   baseURL: `${config.env.LLM_ENDPOINT_HOST}/v1`,
+  supportsStructuredOutputs: true,
 });
 
 export function model(): LanguageModel {
