@@ -1,8 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "./trpc";
 import { QueryErrorDisplay } from "./ErrorBoundary";
 import { useUptimeStore } from "./stores/uptime";
 import { usePostFormStore } from "./stores/postForm";
+
+const SENTIMENT_STYLES = {
+  positive: "bg-green-100 text-green-800",
+  negative: "bg-red-100 text-red-800",
+  neutral: "bg-gray-100 text-gray-700",
+} as const;
 
 function formatUptime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -150,7 +156,72 @@ export function App() {
             </button>
           </form>
         </section>
+
+        <SummarizeSection />
       </div>
     </div>
+  );
+}
+
+function SummarizeSection() {
+  const [text, setText] = useState("");
+  const summarize = trpc.ai.summarize.useMutation();
+
+  const handleSummarize = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    summarize.mutate({ text });
+  };
+
+  return (
+    <section>
+      <h2 className="mb-3 text-xl font-semibold text-gray-800">
+        AI Text Summarizer
+      </h2>
+      <form onSubmit={handleSummarize} className="space-y-3">
+        <textarea
+          placeholder="Paste text to summarize…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          rows={4}
+          maxLength={4096}
+        />
+        <button
+          type="submit"
+          disabled={summarize.isPending || !text.trim()}
+          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {summarize.isPending ? "Summarizing..." : "Summarize"}
+        </button>
+      </form>
+
+      {summarize.isError && <QueryErrorDisplay error={summarize.error} />}
+
+      {summarize.data && (
+        <div className="mt-4 space-y-3 rounded-lg border bg-white px-4 py-3 shadow-sm">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase">Summary</h3>
+            <p className="mt-1 text-gray-800">{summarize.data.summary}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase">Sentiment</h3>
+            <span className={`mt-1 inline-block rounded-full px-3 py-0.5 text-sm font-medium ${SENTIMENT_STYLES[summarize.data.sentiment]}`}>
+              {summarize.data.sentiment}
+            </span>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase">Keywords</h3>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {summarize.data.keywords.map((kw) => (
+                <span key={kw} className="rounded-full bg-blue-50 px-3 py-0.5 text-sm text-blue-700">
+                  {kw}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

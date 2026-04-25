@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 
 const EnvSchema = z.object({
   LLM_ENDPOINT_HOST: z.string().url("LLM_ENDPOINT_HOST must be a valid URL"),
+  LLM_MODEL: z.string().default("llama3"),
 });
 
 export type EnvConfig = z.infer<typeof EnvSchema>;

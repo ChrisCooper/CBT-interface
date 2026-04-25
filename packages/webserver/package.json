@@ -21,7 +21,9 @@
     "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.41",
     "@trpc/server": "^11.0.0",
+    "ai": "^6.0.168",
     "cors": "^2.8.5",
     "drizzle-orm": "^0.45.2",
     "express": "^4.21.0",
