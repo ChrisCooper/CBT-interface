@@ -1,1 +1,0 @@
-ALTER TABLE "todos" ADD COLUMN "lead_time_days" integer;

@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1778772900951,
-      "tag": "0000_perpetual_metal_master",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1778774622365,
-      "tag": "0001_foamy_pride",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1778776018805,
-      "tag": "0002_closed_vampiro",
+      "when": 1778776479024,
+      "tag": "0000_dapper_amphibian",
       "breakpoints": true
     }
   ]

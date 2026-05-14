@@ -1,5 +1,5 @@
 {
-  "id": "f2b5a950-8e23-438a-99d4-f4f01da36231",
+  "id": "a819efd3-05f0-4133-81d9-7ad20b4c5ff8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -92,6 +92,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "lead_time_days": {
+          "name": "lead_time_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -153,6 +159,12 @@
         "due_date": {
           "name": "due_date",
           "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lead_time_days": {
+          "name": "lead_time_days",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

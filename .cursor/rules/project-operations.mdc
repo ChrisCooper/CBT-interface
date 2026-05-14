@@ -31,6 +31,7 @@ Local Postgres runs in Docker (`docker/docker-compose.yml`). Connection string: 
 | Start / stop dev DB | `pnpm db:up` / `pnpm db:down` |
 | Reset DB (destroys data) | `pnpm db:reset` |
 | Nuke + migrate + seed | `pnpm db:nuke` |
+| **Destructive**: squash all migrations into one | `pnpm db:danger:reset-migrations` |
 | Generate a migration | `pnpm db:generate` |
 | Apply pending migrations | `pnpm db:migrate` |
 | Push schema without migration file | `pnpm db:push` |

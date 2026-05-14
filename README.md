@@ -105,6 +105,7 @@ Opens a browser-based UI for browsing and editing database rows.
 | Start dev database | `pnpm db:up` |
 | Stop dev database | `pnpm db:down` |
 | Reset dev database (destroys data) | `pnpm db:reset` |
+| **Destructive**: squash all migrations into one | `pnpm db:danger:reset-migrations` |
 | Generate a migration | `pnpm db:generate` |
 | Apply pending migrations | `pnpm db:migrate` |
 | Push schema (no migration file) | `pnpm db:push` |

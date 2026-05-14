@@ -11,6 +11,7 @@ CREATE TABLE "todo_configs" (
 	"title" text NOT NULL,
 	"priority" integer NOT NULL,
 	"schedule" jsonb NOT NULL,
+	"lead_time_days" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -22,6 +23,7 @@ CREATE TABLE "todos" (
 	"completed" boolean DEFAULT false NOT NULL,
 	"completed_at" timestamp with time zone,
 	"due_date" date,
+	"lead_time_days" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
