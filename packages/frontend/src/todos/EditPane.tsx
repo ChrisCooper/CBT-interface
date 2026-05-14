@@ -28,6 +28,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     fromSchedule(todo.schedule),
   );
   const [dueDate, setDueDate] = useState<string>(todo.dueDate ?? "");
+  const [isUpkeep, setIsUpkeep] = useState(todo.isUpkeep);
   const [leadTimeDays, setLeadTimeDays] = useState<number>(
     todo.leadTimeDays ?? 0,
   );
@@ -38,8 +39,9 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     setPriority(todo.priority as Priority);
     setDueDate(todo.dueDate ?? "");
     setScheduleForm(fromSchedule(todo.schedule));
+    setIsUpkeep(todo.isUpkeep);
     setLeadTimeDays(todo.leadTimeDays ?? 0);
-  }, [todo.id, todo.title, todo.priority, todo.dueDate, todo.schedule, todo.leadTimeDays]);
+  }, [todo.id, todo.title, todo.priority, todo.dueDate, todo.schedule, todo.isUpkeep, todo.leadTimeDays]);
 
   const updateTodo = trpc.todos.update.useMutation({
     onSuccess: () => {
@@ -55,6 +57,8 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   const nextSchedule = useMemo(() => toSchedule(scheduleForm), [scheduleForm]);
   const scheduleChanged = !schedulesEqual(nextSchedule, todo.schedule);
 
+  const isUpkeepChanged = isUpkeep !== todo.isUpkeep;
+
   const leadTimeChanged = leadTimeDays !== (todo.leadTimeDays ?? 0);
 
   const dueDateChanged = dueDate !== (todo.dueDate ?? "");
@@ -64,6 +68,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     priority !== todo.priority ||
     dueDateChanged ||
     scheduleChanged ||
+    isUpkeepChanged ||
     leadTimeChanged;
 
   const handleSave = () => {
@@ -76,6 +81,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     if (priority !== todo.priority) changes.priority = priority;
     if (dueDateChanged) changes.dueDate = dueDate || null;
     if (scheduleChanged) changes.schedule = nextSchedule;
+    if (isUpkeepChanged) changes.isUpkeep = isUpkeep;
     if (leadTimeChanged) changes.leadTimeDays = leadTimeDays || null;
 
     if (Object.keys(changes).length > 1) {
@@ -198,6 +204,38 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
 
         <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
+            Upkeep
+          </label>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isUpkeep}
+            onClick={() => setIsUpkeep((v) => !v)}
+            className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+              isUpkeep
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <span
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                isUpkeep ? "bg-blue-600" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                  isUpkeep ? "translate-x-4" : "translate-x-0.5"
+                }`}
+              />
+            </span>
+            <span className="text-sm text-gray-800">
+              {isUpkeep ? "Upkeep task" : "Not upkeep"}
+            </span>
+          </button>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-xs font-medium text-gray-500">
             Schedule
           </label>
           <ScheduleEditor state={scheduleForm} onChange={setScheduleForm} />
@@ -257,6 +295,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
                 setPriority(todo.priority as Priority);
                 setDueDate(todo.dueDate ?? "");
                 setScheduleForm(fromSchedule(todo.schedule));
+                setIsUpkeep(todo.isUpkeep);
                 setLeadTimeDays(todo.leadTimeDays ?? 0);
               }}
               className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"

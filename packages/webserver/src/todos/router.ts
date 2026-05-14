@@ -78,6 +78,7 @@ async function ensureNextInstance(
     title: config.title,
     priority: config.priority,
     dueDate: toIsoDate(due),
+    isUpkeep: config.isUpkeep,
     leadTimeDays: config.leadTimeDays,
   });
 }
@@ -98,7 +99,7 @@ function listQuery(db: Database) {
       dueDate: todos.dueDate,
       createdAt: todos.createdAt,
       schedule: todoConfigs.schedule,
-      isUpkeep: todoConfigs.isUpkeep,
+      isUpkeep: todos.isUpkeep,
       leadTimeDays: todos.leadTimeDays,
     })
     .from(todos)
@@ -133,6 +134,7 @@ export function createTodosRouter(db: Database) {
               title: input.title,
               priority: input.priority,
               dueDate: input.dueDate ?? null,
+              isUpkeep: input.isUpkeep ?? false,
               leadTimeDays: input.leadTimeDays ?? null,
             })
             .returning();
@@ -140,7 +142,6 @@ export function createTodosRouter(db: Database) {
           return {
             ...out,
             schedule: null as Schedule | null,
-            isUpkeep: false,
           };
         }
 
@@ -152,6 +153,7 @@ export function createTodosRouter(db: Database) {
             title: input.title,
             priority: input.priority,
             schedule: input.schedule,
+            isUpkeep: input.isUpkeep ?? false,
             leadTimeDays: input.leadTimeDays ?? null,
           })
           .returning();
@@ -168,7 +170,7 @@ export function createTodosRouter(db: Database) {
     update: t.procedure
       .input(UpdateTodoSchema)
       .mutation(async ({ input }) => {
-        const { id, dueDate, schedule, leadTimeDays, ...fields } = input;
+        const { id, dueDate, schedule, isUpkeep, leadTimeDays, ...fields } = input;
         log.info({ id, ...fields, scheduleChange: schedule !== undefined }, "todos.update called");
 
         const existingRows = await db
@@ -187,6 +189,7 @@ export function createTodosRouter(db: Database) {
           instanceUpdate.completedAt = fields.completed ? new Date() : null;
         }
         if (dueDate !== undefined) instanceUpdate.dueDate = dueDate;
+        if (isUpkeep !== undefined) instanceUpdate.isUpkeep = isUpkeep;
         if (leadTimeDays !== undefined) instanceUpdate.leadTimeDays = leadTimeDays;
 
         if (Object.keys(instanceUpdate).length > 0) {
@@ -221,6 +224,7 @@ export function createTodosRouter(db: Database) {
               title,
               priority,
               schedule,
+              isUpkeep: isUpkeep ?? existing.isUpkeep,
               leadTimeDays: leadTimeDays ?? null,
             })
             .returning();
@@ -234,6 +238,7 @@ export function createTodosRouter(db: Database) {
           const cfgUpdate: Partial<typeof todoConfigs.$inferInsert> = { schedule };
           if (fields.title !== undefined) cfgUpdate.title = fields.title;
           if (fields.priority !== undefined) cfgUpdate.priority = fields.priority;
+          if (isUpkeep !== undefined) cfgUpdate.isUpkeep = isUpkeep;
           if (leadTimeDays !== undefined) cfgUpdate.leadTimeDays = leadTimeDays;
           await db
             .update(todoConfigs)
@@ -243,6 +248,7 @@ export function createTodosRouter(db: Database) {
           const cfgUpdate: Partial<typeof todoConfigs.$inferInsert> = {};
           if (fields.title !== undefined) cfgUpdate.title = fields.title;
           if (fields.priority !== undefined) cfgUpdate.priority = fields.priority;
+          if (isUpkeep !== undefined) cfgUpdate.isUpkeep = isUpkeep;
           if (leadTimeDays !== undefined) cfgUpdate.leadTimeDays = leadTimeDays;
           if (Object.keys(cfgUpdate).length > 0) {
             await db

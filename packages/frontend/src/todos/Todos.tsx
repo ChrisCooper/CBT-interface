@@ -31,6 +31,7 @@ export function Todos() {
   const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
     fromSchedule(null),
   );
+  const [isUpkeep, setIsUpkeep] = useState(false);
   const [leadTimeDays, setLeadTimeDays] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
@@ -69,11 +70,13 @@ export function Todos() {
       priority,
       ...(dueDate ? { dueDate } : {}),
       ...(schedule ? { schedule } : {}),
+      ...(isUpkeep ? { isUpkeep } : {}),
       ...(leadTimeDays > 0 ? { leadTimeDays } : {}),
     });
     setTitle("");
     setDueDate(todayIso());
     setScheduleForm(fromSchedule(null));
+    setIsUpkeep(false);
     setLeadTimeDays(0);
   };
 
@@ -261,11 +264,31 @@ export function Todos() {
             </div>
 
             <div className="mt-3 space-y-4 rounded-lg border bg-gray-50 p-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-500">
-                  Lead Time
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                    Lead Time
+                  </label>
+                  <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 pt-4 text-sm text-gray-600">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isUpkeep}
+                    onClick={() => setIsUpkeep((v) => !v)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                      isUpkeep ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                        isUpkeep ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                  Upkeep
                 </label>
-                <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-500">

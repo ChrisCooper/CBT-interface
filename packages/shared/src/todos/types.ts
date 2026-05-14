@@ -67,6 +67,7 @@ export const CreateTodoSchema = z.object({
   priority: PrioritySchema,
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   schedule: ScheduleSchema.optional(),
+  isUpkeep: z.boolean().optional(),
   leadTimeDays: z.number().int().min(0).max(365).optional(),
 });
 export type CreateTodo = z.infer<typeof CreateTodoSchema>;
@@ -81,6 +82,7 @@ export const UpdateTodoSchema = z
     dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     // undefined = no change; Schedule = set/update; null = remove recurrence.
     schedule: ScheduleSchema.nullable().optional(),
+    isUpkeep: z.boolean().optional(),
     // undefined = no change; number = set; null = remove.
     leadTimeDays: z.number().int().min(0).max(365).nullable().optional(),
   })
@@ -91,6 +93,7 @@ export const UpdateTodoSchema = z
       v.completed !== undefined ||
       v.dueDate !== undefined ||
       v.schedule !== undefined ||
+      v.isUpkeep !== undefined ||
       v.leadTimeDays !== undefined,
     { message: "At least one field to update must be provided" },
   );
