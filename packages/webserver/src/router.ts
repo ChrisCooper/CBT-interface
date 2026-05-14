@@ -11,6 +11,7 @@ import { users, posts } from "./db/schema.js";
 import { log } from "./logger.js";
 import { container } from "./container.js";
 import { LLM } from "./ai.js";
+import { createTodosRouter } from "./todos/router.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -21,6 +22,8 @@ export function createAppRouter(
   llm: LLM = container.resolve(LLM),
 ) {
   return t.router({
+    todos: createTodosRouter(db),
+
     user: t.router({
       list: t.procedure.query(async () => {
         log.debug("user.list called");
