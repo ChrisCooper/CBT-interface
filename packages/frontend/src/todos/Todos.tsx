@@ -64,7 +64,7 @@ export function Todos() {
       priority,
       ...(dueDate ? { dueDate } : {}),
       ...(schedule ? { schedule } : {}),
-      ...(schedule && leadTimeDays > 0 ? { leadTimeDays } : {}),
+      ...(leadTimeDays > 0 ? { leadTimeDays } : {}),
     });
     setTitle("");
     setDueDate(todayIso());
@@ -214,24 +214,22 @@ export function Todos() {
               <div className="mt-3 space-y-4 rounded-lg border bg-gray-50 p-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                    Lead Time
+                  </label>
+                  <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
                     Schedule
                   </label>
                   <ScheduleEditor state={scheduleForm} onChange={setScheduleForm} />
                 </div>
-                {scheduleForm.kind !== "none" && (
-                  <div>
-                    <label className="mb-1.5 block text-xs font-medium text-gray-500">
-                      Lead Time
-                    </label>
-                    <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
-                  </div>
-                )}
               </div>
             )}
 
             {!showCreateOptions && (
               <p className="mt-2 text-xs text-gray-400">
-                Click the options button to configure a recurring schedule.
+                Click the options button to set lead time or a recurring schedule.
               </p>
             )}
           </div>

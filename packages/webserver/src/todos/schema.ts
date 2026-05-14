@@ -37,6 +37,7 @@ export const todos = pgTable("todos", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   // PG `date` (no time-of-day). Null for one-offs without a scheduled date.
   dueDate: date("due_date"),
+  leadTimeDays: integer("lead_time_days"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

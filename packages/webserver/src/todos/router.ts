@@ -78,6 +78,7 @@ async function ensureNextInstance(
     title: config.title,
     priority: config.priority,
     dueDate: toIsoDate(due),
+    leadTimeDays: config.leadTimeDays,
   });
 }
 
@@ -97,7 +98,7 @@ function listQuery(db: Database) {
       dueDate: todos.dueDate,
       createdAt: todos.createdAt,
       schedule: todoConfigs.schedule,
-      leadTimeDays: todoConfigs.leadTimeDays,
+      leadTimeDays: todos.leadTimeDays,
     })
     .from(todos)
     .leftJoin(todoConfigs, eq(todos.configId, todoConfigs.id));
@@ -131,13 +132,13 @@ export function createTodosRouter(db: Database) {
               title: input.title,
               priority: input.priority,
               dueDate: input.dueDate ?? null,
+              leadTimeDays: input.leadTimeDays ?? null,
             })
             .returning();
           const out = rows[0]!;
           return {
             ...out,
             schedule: null as Schedule | null,
-            leadTimeDays: null as number | null,
           };
         }
 
@@ -184,6 +185,7 @@ export function createTodosRouter(db: Database) {
           instanceUpdate.completedAt = fields.completed ? new Date() : null;
         }
         if (dueDate !== undefined) instanceUpdate.dueDate = dueDate;
+        if (leadTimeDays !== undefined) instanceUpdate.leadTimeDays = leadTimeDays;
 
         if (Object.keys(instanceUpdate).length > 0) {
           await db.update(todos).set(instanceUpdate).where(eq(todos.id, id));

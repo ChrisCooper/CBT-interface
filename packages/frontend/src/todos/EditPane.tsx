@@ -191,6 +191,13 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
 
         <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
+            Lead Time
+          </label>
+          <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-xs font-medium text-gray-500">
             Schedule
           </label>
           <ScheduleEditor state={scheduleForm} onChange={setScheduleForm} />
@@ -205,15 +212,6 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
             </button>
           )}
         </div>
-
-        {scheduleForm.kind !== "none" && (
-          <div>
-            <label className="mb-2 block text-xs font-medium text-gray-500">
-              Lead Time
-            </label>
-            <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
-          </div>
-        )}
 
         <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
