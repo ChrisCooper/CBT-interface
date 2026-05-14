@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PRIORITY_LABELS, type Priority } from "shared";
+import { describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 import { EditPane } from "./EditPane";
 
@@ -109,6 +109,9 @@ export function Todos() {
               Add
             </button>
           </div>
+          <p className="mx-auto mt-2 max-w-2xl text-xs text-gray-400">
+            Add creates a one-off todo. Click any row to add a recurring schedule.
+          </p>
         </form>
       </div>
 
@@ -125,6 +128,28 @@ export function Todos() {
   );
 }
 
+function formatDueDate(dueDate: string): string {
+  const [y, m, d] = dueDate.split("-").map(Number) as [number, number, number];
+  const due = new Date(Date.UTC(y, m - 1, d));
+  const today = new Date();
+  const todayUtc = new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+  );
+  const diffDays = Math.round(
+    (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays === -1) return "Yesterday";
+  if (diffDays > 1 && diffDays <= 6) return `In ${diffDays} days`;
+  if (diffDays < -1 && diffDays >= -6) return `${-diffDays} days ago`;
+  return due.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function TodoRow({
   todo,
   selected,
@@ -138,6 +163,21 @@ function TodoRow({
   onClick: () => void;
   onDelete: () => void;
 }) {
+  const overdue = (() => {
+    if (todo.completed || !todo.dueDate) return false;
+    const [y, m, d] = todo.dueDate.split("-").map(Number) as [
+      number,
+      number,
+      number,
+    ];
+    const due = new Date(Date.UTC(y, m - 1, d));
+    const today = new Date();
+    const todayUtc = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
+    return due < todayUtc;
+  })();
+
   return (
     <li
       role="button"
@@ -165,13 +205,33 @@ function TodoRow({
         onClick={(e) => e.stopPropagation()}
         className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
       />
-      <span
-        className={`flex-1 text-sm ${
-          todo.completed ? "text-gray-400 line-through" : "text-gray-800"
-        }`}
-      >
-        {todo.title}
-      </span>
+      <div className="min-w-0 flex-1">
+        <div
+          className={`truncate text-sm ${
+            todo.completed ? "text-gray-400 line-through" : "text-gray-800"
+          }`}
+        >
+          {todo.title}
+        </div>
+        {(todo.dueDate || todo.schedule) && (
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
+            {todo.dueDate && !todo.completed && (
+              <span
+                className={
+                  overdue ? "font-medium text-red-600" : "text-gray-500"
+                }
+              >
+                {formatDueDate(todo.dueDate)}
+              </span>
+            )}
+            {todo.schedule && (
+              <span className="rounded bg-purple-50 px-1.5 py-0.5 text-purple-700">
+                ↻ {describeSchedule(todo.schedule)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
       <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
         {PRIORITY_LABELS[todo.priority as Priority]}
       </span>

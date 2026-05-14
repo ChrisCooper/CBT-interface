@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1777060657302,
-      "tag": "0000_windy_korath",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1778725910406,
-      "tag": "0001_add_todos",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1778726831868,
-      "tag": "0002_fair_sharon_carter",
+      "when": 1778772900951,
+      "tag": "0000_perpetual_metal_master",
       "breakpoints": true
     }
   ]

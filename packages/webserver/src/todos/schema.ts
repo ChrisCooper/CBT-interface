@@ -1,10 +1,41 @@
-import { pgTable, uuid, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  integer,
+  jsonb,
+  date,
+} from "drizzle-orm/pg-core";
+import type { Schedule } from "shared";
 
-export const todos = pgTable("todos", {
+/**
+ * Recurring "template" for a todo. Each new instance materialized from a
+ * config copies the config's title/priority and uses its schedule to
+ * compute a due date. One-off todos have no config row.
+ */
+export const todoConfigs = pgTable("todo_configs", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: text("title").notNull(),
   priority: integer("priority").notNull(),
+  schedule: jsonb("schedule").$type<Schedule>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const todos = pgTable("todos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  configId: uuid("config_id").references(() => todoConfigs.id, {
+    onDelete: "cascade",
+  }),
+  title: text("title").notNull(),
+  priority: integer("priority").notNull(),
   completed: boolean("completed").notNull().default(false),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  // PG `date` (no time-of-day). Null for one-offs without a scheduled date.
+  dueDate: date("due_date"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
