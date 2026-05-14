@@ -1,0 +1,1 @@
+ALTER TABLE "todo_configs" ADD COLUMN "lead_time_days" integer;

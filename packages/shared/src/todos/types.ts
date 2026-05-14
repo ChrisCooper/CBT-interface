@@ -33,6 +33,7 @@ export const TodoConfigSchema = z.object({
   title: z.string().min(1).max(500),
   priority: PrioritySchema,
   schedule: ScheduleSchema,
+  leadTimeDays: z.number().int().min(0).max(365).nullable(),
   createdAt: z.coerce.date(),
 });
 export type TodoConfig = z.infer<typeof TodoConfigSchema>;
@@ -54,6 +55,7 @@ export const TodoSchema = z.object({
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   createdAt: z.coerce.date(),
   schedule: ScheduleSchema.nullable(),
+  leadTimeDays: z.number().int().min(0).max(365).nullable(),
 });
 
 export type Todo = z.infer<typeof TodoSchema>;
@@ -62,6 +64,7 @@ export const CreateTodoSchema = z.object({
   title: z.string().min(1).max(500),
   priority: PrioritySchema,
   schedule: ScheduleSchema.optional(),
+  leadTimeDays: z.number().int().min(0).max(365).optional(),
 });
 export type CreateTodo = z.infer<typeof CreateTodoSchema>;
 
@@ -73,13 +76,16 @@ export const UpdateTodoSchema = z
     completed: z.boolean().optional(),
     // undefined = no change; Schedule = set/update; null = remove recurrence.
     schedule: ScheduleSchema.nullable().optional(),
+    // undefined = no change; number = set; null = remove.
+    leadTimeDays: z.number().int().min(0).max(365).nullable().optional(),
   })
   .refine(
     (v) =>
       v.title !== undefined ||
       v.priority !== undefined ||
       v.completed !== undefined ||
-      v.schedule !== undefined,
+      v.schedule !== undefined ||
+      v.leadTimeDays !== undefined,
     { message: "At least one field to update must be provided" },
   );
 export type UpdateTodo = z.infer<typeof UpdateTodoSchema>;

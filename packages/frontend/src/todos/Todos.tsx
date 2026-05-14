@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 import { EditPane } from "./EditPane";
@@ -9,6 +9,7 @@ export function Todos() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>(3);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
   const utils = trpc.useUtils();
 
   const todosQuery = trpc.todos.list.useQuery();
@@ -39,14 +40,58 @@ export function Todos() {
     setTitle("");
   };
 
-  const todos = todosQuery.data ?? [];
-  const editingTodo = editingId ? todos.find((t) => t.id === editingId) : null;
+  const allTodos = todosQuery.data ?? [];
+
+  const todos = useMemo(() => {
+    if (!showDueSoonOnly) return allTodos;
+    const today = new Date();
+    const todayUtc = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
+    return allTodos.filter((todo) => {
+      if (todo.completed) return true;
+      if (!todo.dueDate || todo.leadTimeDays == null) return true;
+      const [y, m, d] = todo.dueDate.split("-").map(Number) as [number, number, number];
+      const due = new Date(Date.UTC(y, m - 1, d));
+      const daysUntilDue = Math.round(
+        (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      return daysUntilDue <= todo.leadTimeDays;
+    });
+  }, [allTodos, showDueSoonOnly]);
+
+  const editingTodo = editingId ? allTodos.find((t) => t.id === editingId) : null;
 
   return (
     <div className="flex h-full">
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="mx-auto max-w-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showDueSoonOnly}
+                  onClick={() => setShowDueSoonOnly((v) => !v)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    showDueSoonOnly ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                      showDueSoonOnly ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                Due soon only
+              </label>
+              {showDueSoonOnly && todos.length !== allTodos.length && (
+                <span className="text-xs text-gray-400">
+                  {allTodos.length - todos.length} hidden
+                </span>
+              )}
+            </div>
             {todosQuery.isLoading ? (
               <p className="py-20 text-center text-gray-400">Loading…</p>
             ) : todos.length === 0 ? (

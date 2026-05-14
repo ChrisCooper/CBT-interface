@@ -97,6 +97,7 @@ function listQuery(db: Database) {
       dueDate: todos.dueDate,
       createdAt: todos.createdAt,
       schedule: todoConfigs.schedule,
+      leadTimeDays: todoConfigs.leadTimeDays,
     })
     .from(todos)
     .leftJoin(todoConfigs, eq(todos.configId, todoConfigs.id));
@@ -128,11 +129,11 @@ export function createTodosRouter(db: Database) {
             .insert(todos)
             .values({ title: input.title, priority: input.priority })
             .returning();
-          // List-shaped return so callers can treat create/update output uniformly.
           const out = rows[0]!;
           return {
             ...out,
             schedule: null as Schedule | null,
+            leadTimeDays: null as number | null,
           };
         }
 
@@ -144,6 +145,7 @@ export function createTodosRouter(db: Database) {
             title: input.title,
             priority: input.priority,
             schedule: input.schedule,
+            leadTimeDays: input.leadTimeDays ?? null,
           })
           .returning();
         const config = configRows[0]!;
@@ -159,7 +161,7 @@ export function createTodosRouter(db: Database) {
     update: t.procedure
       .input(UpdateTodoSchema)
       .mutation(async ({ input }) => {
-        const { id, schedule, ...fields } = input;
+        const { id, schedule, leadTimeDays, ...fields } = input;
         log.info({ id, ...fields, scheduleChange: schedule !== undefined }, "todos.update called");
 
         const existingRows = await db
@@ -206,7 +208,12 @@ export function createTodosRouter(db: Database) {
           const priority = instanceUpdate.priority ?? existing.priority;
           const configRows = await db
             .insert(todoConfigs)
-            .values({ title, priority, schedule })
+            .values({
+              title,
+              priority,
+              schedule,
+              leadTimeDays: leadTimeDays ?? null,
+            })
             .returning();
           configIdAfter = configRows[0]!.id;
           await db
@@ -218,20 +225,22 @@ export function createTodosRouter(db: Database) {
           const cfgUpdate: Partial<typeof todoConfigs.$inferInsert> = { schedule };
           if (fields.title !== undefined) cfgUpdate.title = fields.title;
           if (fields.priority !== undefined) cfgUpdate.priority = fields.priority;
+          if (leadTimeDays !== undefined) cfgUpdate.leadTimeDays = leadTimeDays;
           await db
             .update(todoConfigs)
             .set(cfgUpdate)
             .where(eq(todoConfigs.id, existing.configId));
-        } else if (existing.configId && (fields.title !== undefined || fields.priority !== undefined)) {
-          // No schedule change but propagate title/priority so future
-          // instances pick up the new defaults.
+        } else if (existing.configId) {
           const cfgUpdate: Partial<typeof todoConfigs.$inferInsert> = {};
           if (fields.title !== undefined) cfgUpdate.title = fields.title;
           if (fields.priority !== undefined) cfgUpdate.priority = fields.priority;
-          await db
-            .update(todoConfigs)
-            .set(cfgUpdate)
-            .where(eq(todoConfigs.id, existing.configId));
+          if (leadTimeDays !== undefined) cfgUpdate.leadTimeDays = leadTimeDays;
+          if (Object.keys(cfgUpdate).length > 0) {
+            await db
+              .update(todoConfigs)
+              .set(cfgUpdate)
+              .where(eq(todoConfigs.id, existing.configId));
+          }
         }
 
         // Ensure the next instance exists if we're still tied to a config.

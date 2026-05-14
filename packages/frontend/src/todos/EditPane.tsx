@@ -91,13 +91,17 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
     fromSchedule(todo.schedule),
   );
+  const [leadTimeDays, setLeadTimeDays] = useState<number | null>(
+    todo.leadTimeDays,
+  );
   const utils = trpc.useUtils();
 
   useEffect(() => {
     setTitle(todo.title);
     setPriority(todo.priority as Priority);
     setScheduleForm(fromSchedule(todo.schedule));
-  }, [todo.id, todo.title, todo.priority, todo.schedule]);
+    setLeadTimeDays(todo.leadTimeDays);
+  }, [todo.id, todo.title, todo.priority, todo.schedule, todo.leadTimeDays]);
 
   const updateTodo = trpc.todos.update.useMutation({
     onSuccess: () => {
@@ -113,8 +117,13 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   const nextSchedule = useMemo(() => toSchedule(scheduleForm), [scheduleForm]);
   const scheduleChanged = !schedulesEqual(nextSchedule, todo.schedule);
 
+  const leadTimeChanged = leadTimeDays !== todo.leadTimeDays;
+
   const dirty =
-    title.trim() !== todo.title || priority !== todo.priority || scheduleChanged;
+    title.trim() !== todo.title ||
+    priority !== todo.priority ||
+    scheduleChanged ||
+    leadTimeChanged;
 
   const handleSave = () => {
     const trimmed = title.trim();
@@ -125,6 +134,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     if (trimmed !== todo.title) changes.title = trimmed;
     if (priority !== todo.priority) changes.priority = priority;
     if (scheduleChanged) changes.schedule = nextSchedule;
+    if (leadTimeChanged) changes.leadTimeDays = leadTimeDays;
 
     if (Object.keys(changes).length > 1) {
       updateTodo.mutate(changes);
@@ -229,6 +239,50 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
           )}
         </div>
 
+        {scheduleForm.kind !== "none" && (
+          <div>
+            <label className="mb-2 block text-xs font-medium text-gray-500">
+              Lead Time
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={leadTimeDays !== null}
+                  onChange={(e) =>
+                    setLeadTimeDays(e.target.checked ? 7 : null)
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Show in advance of due date
+              </label>
+              {leadTimeDays !== null && (
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span>Show</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={leadTimeDays}
+                    onChange={(e) =>
+                      setLeadTimeDays(
+                        Math.max(0, Math.min(365, Number(e.target.value) || 0)),
+                      )
+                    }
+                    className="w-20 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span>days before due</span>
+                </div>
+              )}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">
+              {leadTimeDays !== null
+                ? `Will appear ${leadTimeDays} day${leadTimeDays !== 1 ? "s" : ""} before the due date when filtered.`
+                : "No lead time — always visible when filtered."}
+            </p>
+          </div>
+        )}
+
         <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
             Status
@@ -272,6 +326,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
                 setTitle(todo.title);
                 setPriority(todo.priority as Priority);
                 setScheduleForm(fromSchedule(todo.schedule));
+                setLeadTimeDays(todo.leadTimeDays);
               }}
               className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
             >

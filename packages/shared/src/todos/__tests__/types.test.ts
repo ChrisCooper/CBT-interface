@@ -32,6 +32,7 @@ describe("TodoSchema", () => {
     dueDate: null,
     createdAt: "2025-01-01T00:00:00Z",
     schedule: null,
+    leadTimeDays: null,
   };
 
   it("parses a valid one-off todo", () => {
