@@ -114,7 +114,7 @@ export interface WeightedPriorityBreakdown {
 
 /**
  * Compute weighted priority on demand: priority × urgency.
- *   - priority: mapped from the 1–4 scale to 1.0 (highest) – 0.0 (lowest).
+ *   - priority: mapped from the 1–4 scale to 1.0 (highest) – 0.25 (lowest).
  *   - urgency: fraction of lead time elapsed (0→1). Defaults to 1 when no lead time.
  * Returns null only when there's no due date.
  */
@@ -126,7 +126,10 @@ export function computeWeightedPriority(
 ): WeightedPriorityBreakdown | null {
   if (!dueDate) return null;
 
-  const priority = (MAX_PRIORITY - pri) / (MAX_PRIORITY - 1);
+  const MIN_PRIORITY_WEIGHT = 0.25;
+  const priority =
+    MIN_PRIORITY_WEIGHT +
+    (1 - MIN_PRIORITY_WEIGHT) * ((MAX_PRIORITY - pri) / (MAX_PRIORITY - 1));
 
   let urgency: number;
   if (!leadTimeDays || leadTimeDays <= 0) {
