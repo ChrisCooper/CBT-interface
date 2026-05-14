@@ -2,12 +2,24 @@ import { useMemo, useState } from "react";
 import { describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 import { EditPane } from "./EditPane";
+import {
+  ScheduleEditor,
+  LeadTimeEditor,
+  fromSchedule,
+  toSchedule,
+  type ScheduleFormState,
+} from "./ScheduleEditor";
 
 type TodoItem = RouterOutput["todos"]["list"][number];
 
 export function Todos() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>(3);
+  const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
+    fromSchedule(null),
+  );
+  const [leadTimeDays, setLeadTimeDays] = useState(0);
+  const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
   const utils = trpc.useUtils();
@@ -32,12 +44,22 @@ export function Todos() {
     },
   });
 
+  const schedule = useMemo(() => toSchedule(scheduleForm), [scheduleForm]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = title.trim();
     if (!trimmed || createTodo.isPending) return;
-    createTodo.mutate({ title: trimmed, priority });
+    createTodo.mutate({
+      title: trimmed,
+      priority,
+      ...(schedule ? { schedule } : {}),
+      ...(schedule && leadTimeDays > 0 ? { leadTimeDays } : {}),
+    });
     setTitle("");
+    setScheduleForm(fromSchedule(null));
+    setLeadTimeDays(0);
+    setShowCreateOptions(false);
   };
 
   const allTodos = todosQuery.data ?? [];
@@ -126,37 +148,75 @@ export function Todos() {
           onSubmit={handleSubmit}
           className="shrink-0 border-t bg-white px-4 py-4"
         >
-          <div className="mx-auto flex max-w-2xl gap-3">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Add a new todo…"
-              disabled={createTodo.isPending}
-              className="flex-1 rounded-full border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
-            <select
-              value={priority}
-              onChange={(e) => setPriority(Number(e.target.value) as Priority)}
-              disabled={createTodo.isPending}
-              className="rounded-full border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {([1, 2, 3, 4] as Priority[]).map((p) => (
-                <option key={p} value={p}>
-                  {PRIORITY_LABELS[p]}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={!title.trim() || createTodo.isPending}
-              className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              Add
-            </button>
+          <div className="mx-auto max-w-2xl">
+            <div className="flex gap-3">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Add a new todo…"
+                disabled={createTodo.isPending}
+                className="flex-1 rounded-full border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <select
+                value={priority}
+                onChange={(e) => setPriority(Number(e.target.value) as Priority)}
+                disabled={createTodo.isPending}
+                className="rounded-full border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {([1, 2, 3, 4] as Priority[]).map((p) => (
+                  <option key={p} value={p}>
+                    {PRIORITY_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowCreateOptions((v) => !v)}
+                className={`rounded-full border px-3 py-2.5 text-sm transition-colors ${
+                  showCreateOptions
+                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-50"
+                }`}
+                title={showCreateOptions ? "Hide options" : "More options (schedule, lead time)"}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+              </button>
+              <button
+                type="submit"
+                disabled={!title.trim() || createTodo.isPending}
+                className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+
+            {showCreateOptions && (
+              <div className="mt-3 space-y-4 rounded-lg border bg-gray-50 p-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                    Schedule
+                  </label>
+                  <ScheduleEditor state={scheduleForm} onChange={setScheduleForm} />
+                </div>
+                {scheduleForm.kind !== "none" && (
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                      Lead Time
+                    </label>
+                    <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!showCreateOptions && (
+              <p className="mt-2 text-xs text-gray-400">
+                Click the options button to configure a recurring schedule.
+              </p>
+            )}
           </div>
-          <p className="mx-auto mt-2 max-w-2xl text-xs text-gray-400">
-            Add creates a one-off todo. Click any row to add a recurring schedule.
-          </p>
         </form>
       </div>
 
