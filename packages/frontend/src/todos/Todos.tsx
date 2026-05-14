@@ -415,29 +415,31 @@ function TodoRow({
         &#9873;
       </span>
       <div className="min-w-0 flex-1">
-        <div
-          className={`flex items-baseline gap-2 text-sm ${
-            todo.completed ? "text-gray-400 line-through" : "text-gray-800"
-          }`}
-        >
-          <span className="truncate">{todo.title}</span>
-          {todo.dueDate && !todo.completed && (
-            <span
-              className={`shrink-0 text-xs ${
-                overdue ? "font-medium text-red-600" : "text-gray-400"
-              }`}
-            >
-              ({formatDueDate(todo.dueDate)})
-            </span>
+        <div className="flex items-baseline gap-2">
+          <div
+            className={`flex min-w-0 items-baseline gap-2 text-sm ${
+              todo.completed ? "text-gray-400 line-through" : "text-gray-800"
+            }`}
+          >
+            <span className="truncate">{todo.title}</span>
+            {todo.dueDate && !todo.completed && (
+              <span
+                className={`shrink-0 text-xs ${
+                  overdue ? "font-medium text-red-600" : "text-gray-400"
+                }`}
+              >
+                ({formatDueDate(todo.dueDate)})
+              </span>
+            )}
+          </div>
+          {todo.tags.length > 0 && (
+            <div className="ml-auto flex shrink-0 gap-1">
+              {todo.tags.map((tag) => (
+                <TagBadge key={tag.id} tag={tag} />
+              ))}
+            </div>
           )}
         </div>
-        {todo.tags.length > 0 && (
-          <div className="mt-0.5 flex flex-wrap gap-1">
-            {todo.tags.map((tag) => (
-              <TagBadge key={tag.id} tag={tag} />
-            ))}
-          </div>
-        )}
         {todo.schedule && (
           <div className="mt-0.5 text-xs text-gray-400">
             ↻ {describeSchedule(todo.schedule)}
