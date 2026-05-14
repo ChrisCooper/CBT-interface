@@ -42,6 +42,7 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
     title: todo.title,
     priority: todo.priority,
     dueDate: toIsoDate(dueDate),
+    isUpkeep: todo.isUpkeep ?? false,
     leadTimeDays: todo.leadTimeDays ?? null,
   }).returning();
 
