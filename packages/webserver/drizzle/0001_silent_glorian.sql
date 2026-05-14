@@ -1,0 +1,1 @@
+ALTER TABLE "todo_configs" ADD COLUMN "is_upkeep" boolean DEFAULT false NOT NULL;

@@ -20,6 +20,7 @@ export const todoConfigs = pgTable("todo_configs", {
   title: text("title").notNull(),
   priority: integer("priority").notNull(),
   schedule: jsonb("schedule").$type<Schedule>().notNull(),
+  isUpkeep: boolean("is_upkeep").notNull().default(false),
   leadTimeDays: integer("lead_time_days"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()

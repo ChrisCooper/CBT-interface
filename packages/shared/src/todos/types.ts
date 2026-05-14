@@ -33,6 +33,7 @@ export const TodoConfigSchema = z.object({
   title: z.string().min(1).max(500),
   priority: PrioritySchema,
   schedule: ScheduleSchema,
+  isUpkeep: z.boolean(),
   leadTimeDays: z.number().int().min(0).max(365).nullable(),
   createdAt: z.coerce.date(),
 });
@@ -55,6 +56,7 @@ export const TodoSchema = z.object({
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   createdAt: z.coerce.date(),
   schedule: ScheduleSchema.nullable(),
+  isUpkeep: z.boolean(),
   leadTimeDays: z.number().int().min(0).max(365).nullable(),
 });
 

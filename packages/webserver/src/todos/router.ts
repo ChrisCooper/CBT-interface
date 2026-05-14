@@ -98,6 +98,7 @@ function listQuery(db: Database) {
       dueDate: todos.dueDate,
       createdAt: todos.createdAt,
       schedule: todoConfigs.schedule,
+      isUpkeep: todoConfigs.isUpkeep,
       leadTimeDays: todos.leadTimeDays,
     })
     .from(todos)
@@ -139,6 +140,7 @@ export function createTodosRouter(db: Database) {
           return {
             ...out,
             schedule: null as Schedule | null,
+            isUpkeep: false,
           };
         }
 

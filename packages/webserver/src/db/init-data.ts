@@ -9,6 +9,7 @@ interface RecurringTodo {
   title: string;
   priority: 1 | 2 | 3 | 4;
   schedule: Schedule;
+  isUpkeep?: boolean;
   leadTimeDays?: number;
   dueAfterDays?: number;
 }
@@ -20,6 +21,7 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
       title: todo.title,
       priority: todo.priority,
       schedule: todo.schedule,
+      isUpkeep: todo.isUpkeep ?? false,
       leadTimeDays: todo.leadTimeDays ?? null,
     })
     .returning();
@@ -63,12 +65,14 @@ const INITIAL_TODOS: RecurringTodo[] = [
     title: "Pay rent",
     priority: 1,
     schedule: { type: "day_of_month", dayOfMonth: 12 },
+    isUpkeep: true,
     leadTimeDays: 1,
   },
   {
     title: "Trim beard",
     priority: 2,
     schedule: { type: "interval", intervalDays: 4 },
+    isUpkeep: true,
     leadTimeDays: 1,
     dueAfterDays: 1,
   },
@@ -76,6 +80,7 @@ const INITIAL_TODOS: RecurringTodo[] = [
     title: "Replace water filter",
     priority: 4,
     schedule: { type: "interval", intervalDays: 80 },
+    isUpkeep: true,
     leadTimeDays: 10,
     dueAfterDays: 6,
   },
@@ -89,6 +94,7 @@ const INITIAL_TODOS: RecurringTodo[] = [
     title: "Water plants",
     priority: 2,
     schedule: { type: "interval", intervalDays: 14 },
+    isUpkeep: true,
     leadTimeDays: 7,
     dueAfterDays: 3,
   },

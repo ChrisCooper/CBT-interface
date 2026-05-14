@@ -326,16 +326,23 @@ function TodoRow({
           : "bg-white hover:bg-gray-50"
       } ${dimmed ? "opacity-50" : ""}`}
     >
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={(e) => {
-          e.stopPropagation();
-          onToggle(e.target.checked);
-        }}
-        onClick={(e) => e.stopPropagation()}
-        className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-      />
+      <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
+        <input
+          type="checkbox"
+          checked={todo.completed}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggle(e.target.checked);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        {todo.isUpkeep && !todo.completed && (
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[11px] text-gray-300">
+            ⚙
+          </span>
+        )}
+      </span>
       <span
         className={`-mx-1 shrink-0 text-xl leading-none ${
           todo.priority === 1
