@@ -48,11 +48,14 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
 interface OneOffTodo {
   title: string;
   priority: 1 | 2 | 3 | 4;
+  dueAfterDays?: number;
+  leadTimeDays?: number;
 }
 
 const INITIAL_ONE_OFF_TODOS: OneOffTodo[] = [
   { title: "Kubernetes learning project", priority: 3 },
   { title: "Sell wobble chair", priority: 4 },
+  { title: "Make slideshow", priority: 1, dueAfterDays: 14, leadTimeDays: 21 },
 ];
 
 const INITIAL_TODOS: RecurringTodo[] = [
@@ -96,9 +99,18 @@ export async function seedInitialTodos(db: Database) {
     await createRecurringTodo(db, todo);
   }
   for (const todo of INITIAL_ONE_OFF_TODOS) {
+    let dueDate: string | undefined;
+    if (todo.dueAfterDays != null) {
+      const now = new Date();
+      const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      todayUtc.setUTCDate(todayUtc.getUTCDate() + todo.dueAfterDays);
+      dueDate = toIsoDate(todayUtc);
+    }
     await db.insert(todos).values({
       title: todo.title,
       priority: todo.priority,
+      ...(dueDate != null && { dueDate }),
+      ...(todo.leadTimeDays != null && { leadTimeDays: todo.leadTimeDays }),
     });
   }
   return INITIAL_TODOS.length + INITIAL_ONE_OFF_TODOS.length;
