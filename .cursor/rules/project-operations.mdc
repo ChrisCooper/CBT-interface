@@ -1,0 +1,50 @@
+---
+description: Common operations for the monorepo (typecheck, build, test, dev, db)
+alwaysApply: true
+---
+
+# Project Operations
+
+pnpm workspace monorepo with three packages: `shared` (zod schemas), `webserver` (Express + tRPC + Drizzle), `frontend` (Vite + React). Always run `pnpm` commands from the repo root unless noted.
+
+## Typecheck
+
+Run `pnpm typecheck` from the root. It uses TypeScript project references (`tsc --build`), so it rebuilds `shared` → `webserver` → `frontend` in the correct order. Do **not** typecheck a single package with `tsc --noEmit` — it can fail with confusing tRPC errors (`"property 'useContext' collides..."`) when a dependency's `dist/` is missing. Use the root script instead.
+
+## Build / Dev / Test
+
+| Task | Command |
+|---|---|
+| Build all packages | `pnpm build` |
+| Run all packages in dev | `pnpm dev` |
+| Backend only | `pnpm dev:webserver` |
+| Frontend only | `pnpm dev:frontend` |
+| Run tests once | `pnpm test` |
+| Watch tests | `pnpm test:watch` |
+
+## Database
+
+Local Postgres runs in Docker (`docker/docker-compose.yml`). Connection string: `postgresql://dev:dev@localhost:5432/cbt`.
+
+| Task | Command |
+|---|---|
+| Start / stop dev DB | `pnpm db:up` / `pnpm db:down` |
+| Reset DB (destroys data) | `pnpm db:reset` |
+| Nuke + migrate + seed | `pnpm db:nuke` |
+| Generate a migration | `pnpm db:generate` |
+| Apply pending migrations | `pnpm db:migrate` |
+| Push schema without migration file | `pnpm db:push` |
+| Open Drizzle Studio | `pnpm db:studio` |
+| Seed sample data | `pnpm db:seed` |
+
+Edit the Drizzle schema at `packages/webserver/src/db/schema.ts`, then `pnpm db:generate` and `pnpm db:migrate`. Use `pnpm db:push` only for rapid prototyping.
+
+## Dependencies
+
+Add to a specific package: `pnpm --filter <name> add <package>` (`-D` for devDependencies). Never `npm install` — this is a pnpm workspace.
+
+## Adding a tRPC Procedure
+
+1. If a new input/output schema is needed, add it to `packages/shared/src/`.
+2. Add the procedure to `packages/webserver/src/router.ts` (or a sub-router).
+3. The frontend gets it automatically via `trpc.<router>.<procedure>.useQuery() / .useMutation()` — no manual wiring. `AppRouter` is exported as a *type* from `webserver` and consumed by the frontend; this is the canonical tRPC pattern.

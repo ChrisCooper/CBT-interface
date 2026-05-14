@@ -16,6 +16,7 @@
     "db:push": "pnpm --filter webserver db:push",
     "db:studio": "pnpm --filter webserver db:studio",
     "db:seed": "pnpm --filter webserver db:seed",
+    "typecheck": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
