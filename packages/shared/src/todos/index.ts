@@ -15,6 +15,8 @@ export {
   type DeleteTodo,
   DeleteSeriesSchema,
   type DeleteSeries,
+  type UrgencyBreakdown,
+  computeUrgency,
 } from "./types.js";
 
 export {

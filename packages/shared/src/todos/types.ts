@@ -103,3 +103,48 @@ export const DeleteSeriesSchema = z.object({
   configId: z.string().uuid(),
 });
 export type DeleteSeries = z.infer<typeof DeleteSeriesSchema>;
+
+const MAX_PRIORITY = 4;
+
+export interface UrgencyBreakdown {
+  priorityValue: number;
+  timeUrgency: number;
+  urgency: number;
+}
+
+/**
+ * Compute urgency on demand from priority and lead-time progress.
+ * When lead time is absent, time urgency defaults to 1 (always urgent).
+ * Returns null only when there's no due date.
+ */
+export function computeUrgency(
+  priority: Priority,
+  dueDate: string | null,
+  leadTimeDays: number | null,
+  today?: Date,
+): UrgencyBreakdown | null {
+  if (!dueDate) return null;
+
+  const priorityValue = (MAX_PRIORITY - priority) / (MAX_PRIORITY - 1);
+
+  let timeUrgency: number;
+  if (!leadTimeDays || leadTimeDays <= 0) {
+    timeUrgency = 1;
+  } else {
+    const now = today ?? new Date();
+    const todayUtc = new Date(
+      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+    );
+    const [y, m, d] = dueDate.split("-").map(Number) as [number, number, number];
+    const due = new Date(Date.UTC(y, m - 1, d));
+
+    const daysUntilDue = Math.round(
+      (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    const daysIntoLeadTime = leadTimeDays - daysUntilDue;
+    timeUrgency = Math.max(0, Math.min(1, daysIntoLeadTime / leadTimeDays));
+  }
+
+  const urgency = priorityValue * timeUrgency;
+  return { priorityValue, timeUrgency, urgency };
+}
