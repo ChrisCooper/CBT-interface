@@ -59,6 +59,8 @@ const INITIAL_ONE_OFF_TODOS: OneOffTodo[] = [
   { title: "Kubernetes learning project", priority: 3 },
   { title: "Sell wobble chair", priority: 4 },
   { title: "Make slideshow", priority: 1, dueAfterDays: 14, leadTimeDays: 21 },
+  { title: "Check Slack for job postings", priority: 2, dueAfterDays: 7, leadTimeDays: 3 },
+  { title: "Reset RBC debit card PIN", priority: 2, dueAfterDays: 14, leadTimeDays: 21 },
 ];
 
 const INITIAL_TODOS: RecurringTodo[] = [
@@ -84,6 +86,14 @@ const INITIAL_TODOS: RecurringTodo[] = [
     isUpkeep: true,
     leadTimeDays: 10,
     dueAfterDays: 6,
+  },
+  {
+    title: "Pay credit cards",
+    priority: 2,
+    schedule: { type: "interval", intervalDays: 20 },
+    isUpkeep: true,
+    leadTimeDays: 5,
+    dueAfterDays: 3,
   },
   {
     title: "Buy birthday gift for mom",
