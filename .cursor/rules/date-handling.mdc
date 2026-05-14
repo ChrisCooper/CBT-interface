@@ -1,0 +1,40 @@
+---
+description: Safe date handling conventions — timestamps vs calendar dates, UTC discipline, serialization
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Date Handling
+
+This app has two distinct date concepts. Never conflate them.
+
+## Instants (timestamps)
+
+`createdAt`, `completedAt`, and similar wall-clock moments.
+
+- **DB:** `timestamp with time zone` (Drizzle `timestamp(..., { withTimezone: true })`).
+- **Zod:** `z.coerce.date()` — coerces ISO strings back to `Date`.
+- **Create with** `new Date()` or DB `defaultNow()`.
+
+## Calendar dates (due dates)
+
+Date-only values like `dueDate` — no time component.
+
+- **DB:** PG `date` column (Drizzle `date("due_date")`).
+- **Zod / wire:** `YYYY-MM-DD` **string**, validated with `z.string().regex(/^\d{4}-\d{2}-\d{2}$/)`. Never a `Date` object on the wire.
+- **In-memory math:** pin to **midnight UTC** via `Date.UTC(y, m-1, d)` and use only `getUTC*` / `setUTC*` methods. Use the shared helpers `toIsoDate`, `fromIsoDate`, `localCalendarDay` from `@cbt/shared` — don't hand-roll equivalents.
+
+## "Today" as a calendar date
+
+Getting "today" requires bridging from local timezone to UTC — the **one** place where local accessors are used:
+
+- **Client-side:** `localCalendarDay(new Date())` reads the user's local calendar day and pins it to UTC midnight. This is correct because "today" is inherently a local-timezone concept.
+- **Server / shared code:** never default to `new Date()` with local getters. Accept `today: Date` as a **required** parameter and let the caller (typically the client) provide it. This avoids the server's timezone silently disagreeing with the user's.
+
+## Rules
+
+1. **No date libraries.** Use native `Date` + the shared helpers.
+2. **Never mix local and UTC accessors** on the same `Date` for calendar-date math — **except** via `localCalendarDay()`, which exists precisely to bridge local→UTC for "today."
+3. **Formatting for display:** use `toLocaleDateString(undefined, { ..., timeZone: "UTC" })` for calendar dates so the displayed day matches the stored day regardless of user timezone.
+4. **tRPC has no `superjson` transformer.** `Date` objects become ISO strings over the wire. Zod schemas with `z.coerce.date()` re-hydrate them on the receiving side; ensure any new timestamp field does the same.
+5. **HTML date inputs** bind to `YYYY-MM-DD` strings directly — no conversion needed.

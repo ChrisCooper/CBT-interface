@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ScheduleSchema } from "./schedule.js";
+import { ScheduleSchema, fromIsoDate } from "./schedule.js";
 
 export const PrioritySchema = z.union([
   z.literal(1),
@@ -122,7 +122,7 @@ export function computeWeightedPriority(
   pri: Priority,
   dueDate: string | null,
   leadTimeDays: number | null,
-  today?: Date,
+  today: Date,
 ): WeightedPriorityBreakdown | null {
   if (!dueDate) return null;
 
@@ -135,15 +135,9 @@ export function computeWeightedPriority(
   if (!leadTimeDays || leadTimeDays <= 0) {
     urgency = 1;
   } else {
-    const now = today ?? new Date();
-    const todayUtc = new Date(
-      Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-    );
-    const [y, m, d] = dueDate.split("-").map(Number) as [number, number, number];
-    const due = new Date(Date.UTC(y, m - 1, d));
-
+    const due = fromIsoDate(dueDate);
     const daysUntilDue = Math.round(
-      (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
+      (due.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
     );
     const daysIntoLeadTime = leadTimeDays - daysUntilDue;
     urgency = Math.max(0, Math.min(1, daysIntoLeadTime / leadTimeDays));

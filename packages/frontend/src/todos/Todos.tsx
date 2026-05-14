@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { computeWeightedPriority, describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
+import { computeWeightedPriority, describeSchedule, fromIsoDate, localCalendarDay, PRIORITY_LABELS, toIsoDate, type Priority } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 import { EditPane } from "./EditPane";
 import {
@@ -13,11 +13,7 @@ import {
 type TodoItem = RouterOutput["todos"]["list"][number];
 
 function todayIso(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return toIsoDate(localCalendarDay(new Date()));
 }
 
 export function Todos() {
@@ -75,15 +71,11 @@ export function Todos() {
 
   const todos = useMemo(() => {
     if (!showDueSoonOnly) return allTodos;
-    const today = new Date();
-    const todayUtc = new Date(
-      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
-    );
+    const todayUtc = localCalendarDay(new Date());
     return allTodos.filter((todo) => {
       if (todo.completed) return true;
       if (!todo.dueDate || todo.leadTimeDays == null) return true;
-      const [y, m, d] = todo.dueDate.split("-").map(Number) as [number, number, number];
-      const due = new Date(Date.UTC(y, m - 1, d));
+      const due = fromIsoDate(todo.dueDate);
       const daysUntilDue = Math.round(
         (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
       );
@@ -226,12 +218,8 @@ export function Todos() {
 }
 
 function formatDueDate(dueDate: string): string {
-  const [y, m, d] = dueDate.split("-").map(Number) as [number, number, number];
-  const due = new Date(Date.UTC(y, m - 1, d));
-  const today = new Date();
-  const todayUtc = new Date(
-    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
-  );
+  const due = fromIsoDate(dueDate);
+  const todayUtc = localCalendarDay(new Date());
   const diffDays = Math.round(
     (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
   );
@@ -262,22 +250,12 @@ function TodoRow({
 }) {
   const overdue = (() => {
     if (todo.completed || !todo.dueDate) return false;
-    const [y, m, d] = todo.dueDate.split("-").map(Number) as [
-      number,
-      number,
-      number,
-    ];
-    const due = new Date(Date.UTC(y, m - 1, d));
-    const today = new Date();
-    const todayUtc = new Date(
-      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
-    );
-    return due < todayUtc;
+    return fromIsoDate(todo.dueDate) < localCalendarDay(new Date());
   })();
 
   const wp = todo.completed
     ? null
-    : computeWeightedPriority(todo.priority as Priority, todo.dueDate, todo.leadTimeDays);
+    : computeWeightedPriority(todo.priority as Priority, todo.dueDate, todo.leadTimeDays, localCalendarDay(new Date()));
 
   return (
     <li

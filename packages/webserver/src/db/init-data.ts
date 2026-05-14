@@ -24,13 +24,14 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
     })
     .returning();
 
+  const now = new Date();
   let dueDate: Date;
   if (todo.dueAfterDays != null) {
-    const today = new Date();
-    dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + todo.dueAfterDays);
+    const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    todayUtc.setUTCDate(todayUtc.getUTCDate() + todo.dueAfterDays);
+    dueDate = todayUtc;
   } else {
-    dueDate = firstDueDate(todo.schedule, new Date());
+    dueDate = firstDueDate(todo.schedule, now);
   }
 
   await db.insert(todos).values({

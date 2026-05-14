@@ -57,6 +57,16 @@ const MONTH_LABELS = [
 ] as const;
 
 /**
+ * Bridge a local-timezone Date to a UTC-midnight Date representing the same
+ * calendar day in the local timezone. This is the ONE place where local
+ * accessors feed into UTC — use it client-side to get "today" as a
+ * UTC-pinned Date for comparison with stored due dates.
+ */
+export function localCalendarDay(d: Date): Date {
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+
+/**
  * All date math is calendar-only: inputs and outputs represent a calendar date
  * with no time component. We use a Date pinned to midnight UTC to avoid
  * timezone drift, and round inputs to the start of their UTC day.

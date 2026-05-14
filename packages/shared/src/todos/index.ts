@@ -32,6 +32,7 @@ export {
   type Schedule,
   SCHEDULE_LABELS,
   DAY_OF_WEEK_LABELS,
+  localCalendarDay,
   firstDueDate,
   nextDueDate,
   describeSchedule,
