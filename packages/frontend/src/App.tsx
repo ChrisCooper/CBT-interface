@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { Chat } from "./Chat";
 import { Todos } from "./todos/Todos";
+import { TodoTags } from "./todos/TodoTags";
 
-type Tab = "todos" | "chat";
+type Tab = "todos" | "tags" | "chat";
+
+const TAB_TITLES: Record<Tab, string> = {
+  todos: "Todos",
+  tags: "Todo Tags",
+  chat: "Chat",
+};
 
 export function App() {
   const [tab, setTab] = useState<Tab>("todos");
@@ -12,7 +19,7 @@ export function App() {
       <header className="shrink-0 border-b bg-white px-6 pt-4 shadow-sm">
         <div className="mx-auto flex max-w-2xl items-end justify-between">
           <h1 className="pb-3 text-xl font-semibold text-gray-900">
-            {tab === "todos" ? "Todos" : "Chat"}
+            {TAB_TITLES[tab]}
           </h1>
           <nav className="flex gap-1" role="tablist">
             <TabButton
@@ -20,6 +27,9 @@ export function App() {
               onClick={() => setTab("todos")}
             >
               Todos
+            </TabButton>
+            <TabButton active={tab === "tags"} onClick={() => setTab("tags")}>
+              Todo Tags
             </TabButton>
             <TabButton active={tab === "chat"} onClick={() => setTab("chat")}>
               Chat
@@ -29,7 +39,13 @@ export function App() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        {tab === "todos" ? <Todos /> : <Chat />}
+        {tab === "todos" ? (
+          <Todos />
+        ) : tab === "tags" ? (
+          <TodoTags />
+        ) : (
+          <Chat />
+        )}
       </main>
     </div>
   );
