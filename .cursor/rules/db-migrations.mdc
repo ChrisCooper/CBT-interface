@@ -1,8 +1,7 @@
 ---
-description: How to deal with migrations
-alwaysApply: true
+description: How to manage and create DB migrations
+alwaysApply: false
 ---
-
 # Migrations
 
 This project is pre-alpha, i.e. not deployed anywhere. Existing data is not important. If a migration is needed and extremely simple (e.g. add a field), it's fine to create a migration, but if it will be more complex like requiring moving data around or anything like that, or if you run into migration trouble, just delete all migrations, create a single "initial" migration, and nuke the DB back to base state. This can be done with `pnpm db:danger:reset-migrations`.

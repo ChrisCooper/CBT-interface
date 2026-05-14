@@ -1,0 +1,43 @@
+---
+description: Monorepo layout and dependency injection patterns
+alwaysApply: true
+---
+
+# Project Structure
+
+pnpm workspace monorepo with three packages under `packages/`.
+
+## `packages/shared`
+
+Cross-cutting **Zod schemas, inferred TypeScript types, and pure domain logic** consumed by both frontend and webserver. No I/O, no Express, no React, no Drizzle — only `zod` as a runtime dep. Barrel-exported from `src/index.ts`. Unit tests live in colocated `__tests__/` dirs.
+
+## `packages/webserver`
+
+Express + tRPC + Drizzle backend.
+
+## `packages/frontend`
+
+Vite + React + Tailwind SPA. tRPC client in `src/trpc.ts` imports the `AppRouter` type from `webserver`. Features are colocated under `src/` (e.g. `src/todos/`). No client-side DI — uses React Query + tRPC providers wired in `src/main.tsx`.
+
+---
+
+# Dependency Injection
+
+The webserver uses **tsyringe** for a small IoC container (`src/container.ts`). `tsconfig.base.json` enables `experimentalDecorators` + `emitDecoratorMetadata` for this.
+
+## Container registrations
+
+`container.ts` registers singletons, e.g. `Config` and `LLM`.
+
+## Factory / parameter injection
+
+Database access is **not** in the container. Routers accept `db` as a factory parameter so tests can substitute a PGlite-backed test DB:
+
+```typescript
+createAppRouter(db = defaultDb, llm = container.resolve(LLM))
+createTodosRouter(db)
+```
+
+## Testing
+
+Vitest fixtures in `src/__tests__/fixtures/` inject a test `db` into `createAppRouter(db)` and call `router.createCaller({})` for integration tests.

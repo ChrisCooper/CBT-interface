@@ -204,7 +204,6 @@ interface LeadTimeEditorProps {
 export function LeadTimeEditor({ leadTimeDays, onChange }: LeadTimeEditorProps) {
   return (
     <div className="flex items-center gap-2 text-sm text-gray-700">
-      <span>Show</span>
       <input
         type="number"
         min={0}
@@ -215,7 +214,7 @@ export function LeadTimeEditor({ leadTimeDays, onChange }: LeadTimeEditorProps) 
         }
         className="w-20 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <span>days before due</span>
+      <span>days</span>
     </div>
   );
 }
