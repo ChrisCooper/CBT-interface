@@ -1,7 +1,8 @@
+import { eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { firstDueDate, toIsoDate, type Schedule } from "shared";
+import { firstDueDate, toIsoDate, type Schedule, type TagColor } from "shared";
 import type * as schema from "./schema.js";
-import { todoConfigs, todos } from "../todos/schema.js";
+import { todoConfigs, todos, tags, todoTags } from "../todos/schema.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -36,15 +37,15 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
     dueDate = firstDueDate(todo.schedule, now);
   }
 
-  await db.insert(todos).values({
+  const [instance] = await db.insert(todos).values({
     configId: config!.id,
     title: todo.title,
     priority: todo.priority,
     dueDate: toIsoDate(dueDate),
     leadTimeDays: todo.leadTimeDays ?? null,
-  });
+  }).returning();
 
-  return config!;
+  return { config: config!, todo: instance! };
 }
 
 interface OneOffTodo {
@@ -100,10 +101,41 @@ const INITIAL_TODOS: RecurringTodo[] = [
   },
 ];
 
+interface InitialTag {
+  name: string;
+  color: TagColor;
+}
+
+const INITIAL_TAGS: InitialTag[] = [
+  { name: "Social", color: "pink" },
+  { name: "Finances", color: "green" },
+];
+
+const TAG_ASSOCIATIONS: Record<string, string[]> = {
+  "Buy birthday gift for mom": ["Social"],
+  "Pay rent": ["Finances"],
+};
+
 export async function seedInitialTodos(db: Database) {
-  for (const todo of INITIAL_TODOS) {
-    await createRecurringTodo(db, todo);
+  const tagIdsByName = new Map<string, string>();
+  for (const tag of INITIAL_TAGS) {
+    const [row] = await db.insert(tags).values(tag).returning();
+    tagIdsByName.set(row!.name, row!.id);
   }
+
+  for (const todo of INITIAL_TODOS) {
+    const { todo: instance } = await createRecurringTodo(db, todo);
+    const assocTags = TAG_ASSOCIATIONS[todo.title];
+    if (assocTags) {
+      for (const tagName of assocTags) {
+        const tagId = tagIdsByName.get(tagName);
+        if (tagId) {
+          await db.insert(todoTags).values({ todoId: instance.id, tagId });
+        }
+      }
+    }
+  }
+
   for (const todo of INITIAL_ONE_OFF_TODOS) {
     let dueDate: string | undefined;
     if (todo.dueAfterDays != null) {
@@ -119,5 +151,6 @@ export async function seedInitialTodos(db: Database) {
       ...(todo.leadTimeDays != null && { leadTimeDays: todo.leadTimeDays }),
     });
   }
+
   return INITIAL_TODOS.length + INITIAL_ONE_OFF_TODOS.length;
 }

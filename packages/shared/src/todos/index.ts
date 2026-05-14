@@ -17,6 +17,18 @@ export {
   type DeleteSeries,
   type WeightedPriorityBreakdown,
   computeWeightedPriority,
+  TAG_COLORS,
+  TagColorSchema,
+  type TagColor,
+  TAG_COLOR_CLASSES,
+  TagSchema,
+  type Tag,
+  CreateTagSchema,
+  type CreateTag,
+  UpdateTagSchema,
+  type UpdateTag,
+  DeleteTagSchema,
+  type DeleteTag,
 } from "./types.js";
 
 export {

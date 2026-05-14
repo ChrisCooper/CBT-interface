@@ -1,19 +1,23 @@
 import { initTRPC } from "@trpc/server";
-import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import {
   CreateTodoSchema,
   UpdateTodoSchema,
   DeleteTodoSchema,
   DeleteSeriesSchema,
+  CreateTagSchema,
+  UpdateTagSchema,
+  DeleteTagSchema,
   firstDueDate,
   nextDueDate,
   toIsoDate,
   fromIsoDate,
   type Schedule,
+  type TagColor,
 } from "shared";
 import * as schema from "../db/schema.js";
-import { todoConfigs, todos } from "./schema.js";
+import { todoConfigs, todos, tags, todoTags } from "./schema.js";
 import { log } from "../logger.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -84,6 +88,53 @@ async function ensureNextInstance(
 }
 
 /**
+ * Replace all tag associations for a todo with the given set of tag IDs.
+ */
+async function syncTodoTags(
+  db: Database,
+  todoId: string,
+  tagIds: string[],
+): Promise<void> {
+  await db.delete(todoTags).where(eq(todoTags.todoId, todoId));
+  if (tagIds.length > 0) {
+    await db
+      .insert(todoTags)
+      .values(tagIds.map((tagId) => ({ todoId, tagId })));
+  }
+}
+
+/**
+ * Fetch the tags for a list of todo IDs, grouped by todoId.
+ */
+async function fetchTodoTags(
+  db: Database,
+  todoIds: string[],
+): Promise<Map<string, { id: string; name: string; color: TagColor }[]>> {
+  if (todoIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      todoId: todoTags.todoId,
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
+    })
+    .from(todoTags)
+    .innerJoin(tags, eq(todoTags.tagId, tags.id))
+    .where(inArray(todoTags.todoId, todoIds));
+
+  const map = new Map<string, { id: string; name: string; color: TagColor }[]>();
+  for (const row of rows) {
+    let list = map.get(row.todoId);
+    if (!list) {
+      list = [];
+      map.set(row.todoId, list);
+    }
+    list.push({ id: row.id, name: row.name, color: row.color });
+  }
+  return map;
+}
+
+/**
  * Shape returned by `todos.list`: a left join of todos with their config,
  * flattened so the schedule sits alongside the instance fields.
  */
@@ -106,17 +157,28 @@ function listQuery(db: Database) {
     .leftJoin(todoConfigs, eq(todos.configId, todoConfigs.id));
 }
 
+type ListRow = Awaited<ReturnType<typeof listQuery>>[number];
+
+async function listWithTags(db: Database, rows: ListRow[]) {
+  const todoIds = rows.map((r) => r.id);
+  const tagMap = await fetchTodoTags(db, todoIds);
+  return rows.map((r) => ({
+    ...r,
+    tags: tagMap.get(r.id) ?? [] as { id: string; name: string; color: TagColor }[],
+  }));
+}
+
 export function createTodosRouter(db: Database) {
   return t.router({
     list: t.procedure.query(async () => {
       log.debug("todos.list called");
-      return listQuery(db).orderBy(
+      const rows = await listQuery(db).orderBy(
         asc(todos.completed),
-        // Open items first (nearest dueDate, nulls last); completed go last.
         sql`${todos.dueDate} asc nulls last`,
         asc(todos.priority),
         desc(todos.createdAt),
       );
+      return listWithTags(db, rows);
     }),
 
     create: t.procedure
@@ -126,6 +188,8 @@ export function createTodosRouter(db: Database) {
           { title: input.title, priority: input.priority, schedule: input.schedule },
           "todos.create called",
         );
+
+        let todoId: string;
 
         if (!input.schedule) {
           const rows = await db
@@ -138,39 +202,44 @@ export function createTodosRouter(db: Database) {
               leadTimeDays: input.leadTimeDays ?? null,
             })
             .returning();
-          const out = rows[0]!;
-          return {
-            ...out,
-            schedule: null as Schedule | null,
-          };
+          todoId = rows[0]!.id;
+        } else {
+          const configRows = await db
+            .insert(todoConfigs)
+            .values({
+              title: input.title,
+              priority: input.priority,
+              schedule: input.schedule,
+              isUpkeep: input.isUpkeep ?? false,
+              leadTimeDays: input.leadTimeDays ?? null,
+            })
+            .returning();
+          const config = configRows[0]!;
+          await ensureNextInstance(db, config.id);
+
+          const created = await listQuery(db)
+            .where(eq(todos.configId, config.id))
+            .orderBy(desc(todos.createdAt))
+            .limit(1);
+          todoId = created[0]!.id;
         }
 
-        // Recurring: create config first, then materialize the first instance
-        // via the shared ensureNextInstance path so anchor logic stays in one place.
-        const configRows = await db
-          .insert(todoConfigs)
-          .values({
-            title: input.title,
-            priority: input.priority,
-            schedule: input.schedule,
-            isUpkeep: input.isUpkeep ?? false,
-            leadTimeDays: input.leadTimeDays ?? null,
-          })
-          .returning();
-        const config = configRows[0]!;
-        await ensureNextInstance(db, config.id);
+        if (input.tagIds?.length) {
+          await syncTodoTags(db, todoId, input.tagIds);
+        }
 
-        const created = await listQuery(db)
-          .where(eq(todos.configId, config.id))
-          .orderBy(desc(todos.createdAt))
+        const result = await listQuery(db)
+          .where(eq(todos.id, todoId))
           .limit(1);
-        return created[0]!;
+        const row = result[0]!;
+        const tagMap = await fetchTodoTags(db, [todoId]);
+        return { ...row, tags: tagMap.get(todoId) ?? [] };
       }),
 
     update: t.procedure
       .input(UpdateTodoSchema)
       .mutation(async ({ input }) => {
-        const { id, dueDate, schedule, isUpkeep, leadTimeDays, ...fields } = input;
+        const { id, dueDate, schedule, isUpkeep, leadTimeDays, tagIds, ...fields } = input;
         log.info({ id, ...fields, scheduleChange: schedule !== undefined }, "todos.update called");
 
         const existingRows = await db
@@ -264,10 +333,16 @@ export function createTodosRouter(db: Database) {
           await ensureNextInstance(db, configIdAfter);
         }
 
+        if (tagIds !== undefined) {
+          await syncTodoTags(db, id, tagIds);
+        }
+
         const after = await listQuery(db)
           .where(eq(todos.id, id))
           .limit(1);
-        return after[0] ?? null;
+        if (!after[0]) return null;
+        const tagMap = await fetchTodoTags(db, [id]);
+        return { ...after[0], tags: tagMap.get(id) ?? [] };
       }),
 
     delete: t.procedure
@@ -324,6 +399,44 @@ export function createTodosRouter(db: Database) {
         ...r,
         completionRate: r.total > 0 ? r.completed / r.total : 0,
       }));
+    }),
+
+    tags: t.router({
+      list: t.procedure.query(async () => {
+        log.debug("todos.tags.list called");
+        return db.select().from(tags).orderBy(asc(tags.name));
+      }),
+
+      create: t.procedure
+        .input(CreateTagSchema)
+        .mutation(async ({ input }) => {
+          log.info({ name: input.name }, "todos.tags.create called");
+          const rows = await db.insert(tags).values(input).returning();
+          return rows[0]!;
+        }),
+
+      update: t.procedure
+        .input(UpdateTagSchema)
+        .mutation(async ({ input }) => {
+          const { id, ...fields } = input;
+          log.info({ id, ...fields }, "todos.tags.update called");
+          const update: Partial<typeof tags.$inferInsert> = {};
+          if (fields.name !== undefined) update.name = fields.name;
+          if (fields.color !== undefined) update.color = fields.color;
+          if (Object.keys(update).length > 0) {
+            await db.update(tags).set(update).where(eq(tags.id, id));
+          }
+          const rows = await db.select().from(tags).where(eq(tags.id, id));
+          return rows[0] ?? null;
+        }),
+
+      delete: t.procedure
+        .input(DeleteTagSchema)
+        .mutation(async ({ input }) => {
+          log.info({ id: input.id }, "todos.tags.delete called");
+          await db.delete(tags).where(eq(tags.id, input.id));
+          return { id: input.id };
+        }),
     }),
   });
 }

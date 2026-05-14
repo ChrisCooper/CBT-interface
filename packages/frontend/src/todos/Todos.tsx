@@ -9,6 +9,7 @@ import {
   toSchedule,
   type ScheduleFormState,
 } from "./ScheduleEditor";
+import { TagBadge, TagPicker } from "./TagPicker";
 
 type TodoItem = RouterOutput["todos"]["list"][number];
 
@@ -33,6 +34,7 @@ export function Todos() {
   );
   const [isUpkeep, setIsUpkeep] = useState(false);
   const [leadTimeDays, setLeadTimeDays] = useState(0);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
   const [includeUpkeep, setIncludeUpkeep] = useState(true);
@@ -72,12 +74,14 @@ export function Todos() {
       ...(schedule ? { schedule } : {}),
       ...(isUpkeep ? { isUpkeep } : {}),
       ...(leadTimeDays > 0 ? { leadTimeDays } : {}),
+      ...(selectedTagIds.length > 0 ? { tagIds: selectedTagIds } : {}),
     });
     setTitle("");
     setDueDate(todayIso());
     setScheduleForm(fromSchedule(null));
     setIsUpkeep(false);
     setLeadTimeDays(0);
+    setSelectedTagIds([]);
   };
 
   const allTodos = todosQuery.data ?? [];
@@ -296,6 +300,12 @@ export function Todos() {
                 </label>
                 <ScheduleEditor state={scheduleForm} onChange={setScheduleForm} />
               </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                  Tags
+                </label>
+                <TagPicker selectedIds={selectedTagIds} onChange={setSelectedTagIds} />
+              </div>
             </div>
           </div>
         </form>
@@ -421,6 +431,13 @@ function TodoRow({
             </span>
           )}
         </div>
+        {todo.tags.length > 0 && (
+          <div className="mt-0.5 flex flex-wrap gap-1">
+            {todo.tags.map((tag) => (
+              <TagBadge key={tag.id} tag={tag} />
+            ))}
+          </div>
+        )}
         {todo.schedule && (
           <div className="mt-0.5 text-xs text-gray-400">
             ↻ {describeSchedule(todo.schedule)}

@@ -1,1 +1,0 @@
-ALTER TABLE "todos" ADD COLUMN "is_upkeep" boolean DEFAULT false NOT NULL;

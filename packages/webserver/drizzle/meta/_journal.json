@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1778776479024,
-      "tag": "0000_dapper_amphibian",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1778790037184,
-      "tag": "0001_silent_glorian",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1778791435465,
-      "tag": "0002_lush_thena",
+      "when": 1778793219349,
+      "tag": "0000_eager_lester",
       "breakpoints": true
     }
   ]

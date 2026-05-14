@@ -13,6 +13,7 @@ import {
   schedulesEqual,
   type ScheduleFormState,
 } from "./ScheduleEditor";
+import { TagPicker } from "./TagPicker";
 
 type TodoItem = RouterOutput["todos"]["list"][number];
 
@@ -32,6 +33,9 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   const [leadTimeDays, setLeadTimeDays] = useState<number>(
     todo.leadTimeDays ?? 0,
   );
+  const [tagIds, setTagIds] = useState<string[]>(
+    () => todo.tags?.map((t) => t.id) ?? [],
+  );
   const utils = trpc.useUtils();
 
   useEffect(() => {
@@ -41,7 +45,8 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     setScheduleForm(fromSchedule(todo.schedule));
     setIsUpkeep(todo.isUpkeep);
     setLeadTimeDays(todo.leadTimeDays ?? 0);
-  }, [todo.id, todo.title, todo.priority, todo.dueDate, todo.schedule, todo.isUpkeep, todo.leadTimeDays]);
+    setTagIds(todo.tags?.map((t) => t.id) ?? []);
+  }, [todo.id, todo.title, todo.priority, todo.dueDate, todo.schedule, todo.isUpkeep, todo.leadTimeDays, todo.tags]);
 
   const updateTodo = trpc.todos.update.useMutation({
     onSuccess: () => {
@@ -63,13 +68,17 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
 
   const dueDateChanged = dueDate !== (todo.dueDate ?? "");
 
+  const originalTagIds = (todo.tags ?? []).map((t) => t.id).sort().join(",");
+  const tagsChanged = [...tagIds].sort().join(",") !== originalTagIds;
+
   const dirty =
     title.trim() !== todo.title ||
     priority !== todo.priority ||
     dueDateChanged ||
     scheduleChanged ||
     isUpkeepChanged ||
-    leadTimeChanged;
+    leadTimeChanged ||
+    tagsChanged;
 
   const handleSave = () => {
     const trimmed = title.trim();
@@ -83,6 +92,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     if (scheduleChanged) changes.schedule = nextSchedule;
     if (isUpkeepChanged) changes.isUpkeep = isUpkeep;
     if (leadTimeChanged) changes.leadTimeDays = leadTimeDays || null;
+    if (tagsChanged) changes.tagIds = tagIds;
 
     if (Object.keys(changes).length > 1) {
       updateTodo.mutate(changes);
@@ -197,6 +207,13 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
 
         <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
+            Tags
+          </label>
+          <TagPicker selectedIds={tagIds} onChange={setTagIds} />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-xs font-medium text-gray-500">
             Lead Time
           </label>
           <LeadTimeEditor leadTimeDays={leadTimeDays} onChange={setLeadTimeDays} />
@@ -297,6 +314,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
                 setScheduleForm(fromSchedule(todo.schedule));
                 setIsUpkeep(todo.isUpkeep);
                 setLeadTimeDays(todo.leadTimeDays ?? 0);
+                setTagIds(todo.tags?.map((t) => t.id) ?? []);
               }}
               className="flex-1 rounded-lg border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
             >

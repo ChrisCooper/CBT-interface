@@ -1,5 +1,5 @@
 {
-  "id": "a819efd3-05f0-4133-81d9-7ad20b4c5ff8",
+  "id": "da9fde09-3966-4488-8d43-d533bbc41893",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -63,6 +63,54 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.tags": {
+      "name": "tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'gray'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tags_name_unique": {
+          "name": "tags_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.todo_configs": {
       "name": "todo_configs",
       "schema": "",
@@ -92,6 +140,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "is_upkeep": {
+          "name": "is_upkeep",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "lead_time_days": {
           "name": "lead_time_days",
           "type": "integer",
@@ -109,6 +164,66 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.todo_tags": {
+      "name": "todo_tags",
+      "schema": "",
+      "columns": {
+        "todo_id": {
+          "name": "todo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "todo_tags_todo_id_todos_id_fk": {
+          "name": "todo_tags_todo_id_todos_id_fk",
+          "tableFrom": "todo_tags",
+          "tableTo": "todos",
+          "columnsFrom": [
+            "todo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "todo_tags_tag_id_tags_id_fk": {
+          "name": "todo_tags_tag_id_tags_id_fk",
+          "tableFrom": "todo_tags",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "todo_tags_todo_id_tag_id_pk": {
+          "name": "todo_tags_todo_id_tag_id_pk",
+          "columns": [
+            "todo_id",
+            "tag_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -161,6 +276,13 @@
           "type": "date",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_upkeep": {
+          "name": "is_upkeep",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "lead_time_days": {
           "name": "lead_time_days",

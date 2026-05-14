@@ -69,6 +69,7 @@ export const CreateTodoSchema = z.object({
   schedule: ScheduleSchema.optional(),
   isUpkeep: z.boolean().optional(),
   leadTimeDays: z.number().int().min(0).max(365).optional(),
+  tagIds: z.array(z.string().uuid()).optional(),
 });
 export type CreateTodo = z.infer<typeof CreateTodoSchema>;
 
@@ -85,6 +86,8 @@ export const UpdateTodoSchema = z
     isUpkeep: z.boolean().optional(),
     // undefined = no change; number = set; null = remove.
     leadTimeDays: z.number().int().min(0).max(365).nullable().optional(),
+    // undefined = no change; array = replace all tag associations.
+    tagIds: z.array(z.string().uuid()).optional(),
   })
   .refine(
     (v) =>
@@ -94,7 +97,8 @@ export const UpdateTodoSchema = z
       v.dueDate !== undefined ||
       v.schedule !== undefined ||
       v.isUpkeep !== undefined ||
-      v.leadTimeDays !== undefined,
+      v.leadTimeDays !== undefined ||
+      v.tagIds !== undefined,
     { message: "At least one field to update must be provided" },
   );
 export type UpdateTodo = z.infer<typeof UpdateTodoSchema>;
@@ -108,6 +112,57 @@ export const DeleteSeriesSchema = z.object({
   configId: z.string().uuid(),
 });
 export type DeleteSeries = z.infer<typeof DeleteSeriesSchema>;
+
+export const TAG_COLORS = [
+  "gray",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
+] as const;
+
+export const TagColorSchema = z.enum(TAG_COLORS);
+export type TagColor = z.infer<typeof TagColorSchema>;
+
+export const TAG_COLOR_CLASSES: Record<TagColor, { bg: string; text: string }> = {
+  gray:   { bg: "bg-gray-100",   text: "text-gray-700" },
+  red:    { bg: "bg-red-100",    text: "text-red-700" },
+  orange: { bg: "bg-orange-100", text: "text-orange-700" },
+  yellow: { bg: "bg-yellow-100", text: "text-yellow-700" },
+  green:  { bg: "bg-green-100",  text: "text-green-700" },
+  blue:   { bg: "bg-blue-100",   text: "text-blue-700" },
+  purple: { bg: "bg-purple-100", text: "text-purple-700" },
+  pink:   { bg: "bg-pink-100",   text: "text-pink-700" },
+};
+
+export const TagSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(50),
+  color: TagColorSchema,
+  createdAt: z.coerce.date(),
+});
+export type Tag = z.infer<typeof TagSchema>;
+
+export const CreateTagSchema = z.object({
+  name: z.string().min(1).max(50),
+  color: TagColorSchema,
+});
+export type CreateTag = z.infer<typeof CreateTagSchema>;
+
+export const UpdateTagSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(50).optional(),
+  color: TagColorSchema.optional(),
+});
+export type UpdateTag = z.infer<typeof UpdateTagSchema>;
+
+export const DeleteTagSchema = z.object({
+  id: z.string().uuid(),
+});
+export type DeleteTag = z.infer<typeof DeleteTagSchema>;
 
 const MAX_PRIORITY = 4;
 

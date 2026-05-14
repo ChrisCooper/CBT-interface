@@ -1,6 +1,6 @@
 import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
 
-export { todos, todoConfigs } from "../todos/schema.js";
+export { todos, todoConfigs, tags, todoTags } from "../todos/schema.js";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),

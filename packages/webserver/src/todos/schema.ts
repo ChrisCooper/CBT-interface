@@ -7,8 +7,9 @@ import {
   integer,
   jsonb,
   date,
+  primaryKey,
 } from "drizzle-orm/pg-core";
-import type { Schedule } from "shared";
+import type { Schedule, TagColor } from "shared";
 
 /**
  * Recurring "template" for a todo. Each new instance materialized from a
@@ -44,3 +45,25 @@ export const todos = pgTable("todos", {
     .defaultNow()
     .notNull(),
 });
+
+export const tags = pgTable("tags", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  color: text("color").$type<TagColor>().notNull().default("gray"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const todoTags = pgTable(
+  "todo_tags",
+  {
+    todoId: uuid("todo_id")
+      .notNull()
+      .references(() => todos.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.todoId, table.tagId] })],
+);
