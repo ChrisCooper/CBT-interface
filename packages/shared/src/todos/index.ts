@@ -15,8 +15,8 @@ export {
   type DeleteTodo,
   DeleteSeriesSchema,
   type DeleteSeries,
-  type UrgencyBreakdown,
-  computeUrgency,
+  type WeightedPriorityBreakdown,
+  computeWeightedPriority,
 } from "./types.js";
 
 export {

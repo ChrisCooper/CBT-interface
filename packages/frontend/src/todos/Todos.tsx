@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { computeUrgency, describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
+import { computeWeightedPriority, describeSchedule, PRIORITY_LABELS, type Priority } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 import { EditPane } from "./EditPane";
 import {
@@ -275,9 +275,9 @@ function TodoRow({
     return due < todayUtc;
   })();
 
-  const urgency = todo.completed
+  const wp = todo.completed
     ? null
-    : computeUrgency(todo.priority as Priority, todo.dueDate, todo.leadTimeDays);
+    : computeWeightedPriority(todo.priority as Priority, todo.dueDate, todo.leadTimeDays);
 
   return (
     <li
@@ -332,9 +332,9 @@ function TodoRow({
             )}
           </div>
         )}
-        {urgency && (
+        {wp && (
           <div className="mt-0.5 text-xs text-gray-300">
-            {urgency.priorityValue.toFixed(2)} × {urgency.timeUrgency.toFixed(2)} = {urgency.urgency.toFixed(2)}
+            {wp.priority.toFixed(2)} × {wp.urgency.toFixed(2)} = {wp.weightedPriority.toFixed(2)}
           </div>
         )}
       </div>

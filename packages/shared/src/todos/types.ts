@@ -106,30 +106,31 @@ export type DeleteSeries = z.infer<typeof DeleteSeriesSchema>;
 
 const MAX_PRIORITY = 4;
 
-export interface UrgencyBreakdown {
-  priorityValue: number;
-  timeUrgency: number;
+export interface WeightedPriorityBreakdown {
+  priority: number;
   urgency: number;
+  weightedPriority: number;
 }
 
 /**
- * Compute urgency on demand from priority and lead-time progress.
- * When lead time is absent, time urgency defaults to 1 (always urgent).
+ * Compute weighted priority on demand: priority × urgency.
+ *   - priority: mapped from the 1–4 scale to 1.0 (highest) – 0.0 (lowest).
+ *   - urgency: fraction of lead time elapsed (0→1). Defaults to 1 when no lead time.
  * Returns null only when there's no due date.
  */
-export function computeUrgency(
-  priority: Priority,
+export function computeWeightedPriority(
+  pri: Priority,
   dueDate: string | null,
   leadTimeDays: number | null,
   today?: Date,
-): UrgencyBreakdown | null {
+): WeightedPriorityBreakdown | null {
   if (!dueDate) return null;
 
-  const priorityValue = (MAX_PRIORITY - priority) / (MAX_PRIORITY - 1);
+  const priority = (MAX_PRIORITY - pri) / (MAX_PRIORITY - 1);
 
-  let timeUrgency: number;
+  let urgency: number;
   if (!leadTimeDays || leadTimeDays <= 0) {
-    timeUrgency = 1;
+    urgency = 1;
   } else {
     const now = today ?? new Date();
     const todayUtc = new Date(
@@ -142,9 +143,9 @@ export function computeUrgency(
       (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
     );
     const daysIntoLeadTime = leadTimeDays - daysUntilDue;
-    timeUrgency = Math.max(0, Math.min(1, daysIntoLeadTime / leadTimeDays));
+    urgency = Math.max(0, Math.min(1, daysIntoLeadTime / leadTimeDays));
   }
 
-  const urgency = priorityValue * timeUrgency;
-  return { priorityValue, timeUrgency, urgency };
+  const weightedPriority = priority * urgency;
+  return { priority, urgency, weightedPriority };
 }
