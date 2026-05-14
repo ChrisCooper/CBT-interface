@@ -1,4 +1,8 @@
 export {
+  PrioritySchema,
+  type Priority,
+  PRIORITY_LABELS,
+  PRIORITY_DESCRIPTIONS,
   TodoSchema,
   type Todo,
   CreateTodoSchema,

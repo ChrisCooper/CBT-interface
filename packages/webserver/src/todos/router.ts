@@ -1,5 +1,5 @@
 import { initTRPC } from "@trpc/server";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import {
   CreateTodoSchema,
@@ -18,13 +18,16 @@ export function createTodosRouter(db: Database) {
   return t.router({
     list: t.procedure.query(async () => {
       log.debug("todos.list called");
-      return db.select().from(todos).orderBy(desc(todos.createdAt));
+      return db
+        .select()
+        .from(todos)
+        .orderBy(asc(todos.priority), desc(todos.createdAt));
     }),
 
     create: t.procedure
       .input(CreateTodoSchema)
       .mutation(async ({ input }) => {
-        log.info({ title: input.title }, "todos.create called");
+        log.info({ title: input.title, priority: input.priority }, "todos.create called");
         const rows = await db.insert(todos).values(input).returning();
         return rows[0]!;
       }),

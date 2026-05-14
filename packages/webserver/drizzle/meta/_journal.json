@@ -15,6 +15,13 @@
       "when": 1778725910406,
       "tag": "0001_add_todos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778726831868,
+      "tag": "0002_fair_sharon_carter",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { PRIORITY_LABELS, type Priority } from "shared";
 import { trpc } from "../trpc";
 
 export function Todos() {
   const [title, setTitle] = useState("");
+  const [priority, setPriority] = useState<Priority>(3);
   const utils = trpc.useUtils();
 
   const todosQuery = trpc.todos.list.useQuery();
@@ -29,7 +31,7 @@ export function Todos() {
     e.preventDefault();
     const trimmed = title.trim();
     if (!trimmed || createTodo.isPending) return;
-    createTodo.mutate({ title: trimmed });
+    createTodo.mutate({ title: trimmed, priority });
     setTitle("");
   };
 
@@ -72,6 +74,9 @@ export function Todos() {
                   >
                     {todo.title}
                   </span>
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    {PRIORITY_LABELS[todo.priority as Priority]}
+                  </span>
                   <button
                     type="button"
                     onClick={() => deleteTodo.mutate({ id: todo.id })}
@@ -99,6 +104,18 @@ export function Todos() {
             disabled={createTodo.isPending}
             className="flex-1 rounded-full border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           />
+          <select
+            value={priority}
+            onChange={(e) => setPriority(Number(e.target.value) as Priority)}
+            disabled={createTodo.isPending}
+            className="rounded-full border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            {([1, 2, 3, 4] as Priority[]).map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_LABELS[p]}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
             disabled={!title.trim() || createTodo.isPending}

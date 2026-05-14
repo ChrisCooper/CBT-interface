@@ -12,34 +12,38 @@ describe("todos router", () => {
       expect(result).toEqual([]);
     });
 
-    test("returns todos ordered by createdAt desc", async ({ db, trpc }) => {
-      await db.insert(todos).values({ title: "first" });
+    test("returns todos ordered by priority asc, then createdAt desc", async ({ db, trpc }) => {
+      await db.insert(todos).values({ title: "low priority old", priority: 4 });
       await new Promise((r) => setTimeout(r, 5));
-      await db.insert(todos).values({ title: "second" });
+      await db.insert(todos).values({ title: "high priority", priority: 1 });
+      await new Promise((r) => setTimeout(r, 5));
+      await db.insert(todos).values({ title: "low priority new", priority: 4 });
 
       const result = await trpc.todos.list();
-      expect(result).toHaveLength(2);
-      expect(result[0]!.title).toBe("second");
-      expect(result[1]!.title).toBe("first");
+      expect(result).toHaveLength(3);
+      expect(result[0]!.title).toBe("high priority");
+      expect(result[1]!.title).toBe("low priority new");
+      expect(result[2]!.title).toBe("low priority old");
     });
   });
 
   describe("todos.create", () => {
-    test("creates a todo with completed=false", async ({ trpc }) => {
-      const created = await trpc.todos.create({ title: "buy milk" });
+    test("creates a todo with the given priority", async ({ trpc }) => {
+      const created = await trpc.todos.create({ title: "buy milk", priority: 2 });
       expect(created.title).toBe("buy milk");
+      expect(created.priority).toBe(2);
       expect(created.completed).toBe(false);
       expect(created.id).toBeDefined();
     });
 
     test("rejects an empty title", async ({ trpc }) => {
-      await expect(trpc.todos.create({ title: "" })).rejects.toThrow();
+      await expect(trpc.todos.create({ title: "", priority: 3 })).rejects.toThrow();
     });
   });
 
   describe("todos.setCompleted", () => {
     test("toggles completion state", async ({ trpc }) => {
-      const created = await trpc.todos.create({ title: "task" });
+      const created = await trpc.todos.create({ title: "task", priority: 3 });
 
       const completed = await trpc.todos.setCompleted({
         id: created.id,
@@ -57,7 +61,7 @@ describe("todos router", () => {
 
   describe("todos.delete", () => {
     test("removes a todo", async ({ trpc }) => {
-      const created = await trpc.todos.create({ title: "delete me" });
+      const created = await trpc.todos.create({ title: "delete me", priority: 4 });
 
       await trpc.todos.delete({ id: created.id });
 
