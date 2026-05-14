@@ -71,7 +71,8 @@ export function Todos() {
 
   const isDueSoon = (todo: TodoItem): boolean => {
     if (todo.completed) return true;
-    if (!todo.dueDate || todo.leadTimeDays == null) return true;
+    if (!todo.dueDate) return false;
+    if (todo.leadTimeDays == null) return true;
     const due = fromIsoDate(todo.dueDate);
     const todayUtc = localCalendarDay(new Date());
     const daysUntilDue = Math.round(
@@ -305,28 +306,24 @@ function TodoRow({
       </span>
       <div className="min-w-0 flex-1">
         <div
-          className={`truncate text-sm ${
+          className={`flex items-baseline gap-2 text-sm ${
             todo.completed ? "text-gray-400 line-through" : "text-gray-800"
           }`}
         >
-          {todo.title}
+          <span className="truncate">{todo.title}</span>
+          {todo.dueDate && !todo.completed && (
+            <span
+              className={`shrink-0 text-xs ${
+                overdue ? "font-medium text-red-600" : "text-gray-400"
+              }`}
+            >
+              ({formatDueDate(todo.dueDate)})
+            </span>
+          )}
         </div>
-        {(todo.dueDate || todo.schedule) && (
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs">
-            {todo.dueDate && !todo.completed && (
-              <span
-                className={
-                  overdue ? "font-medium text-red-600" : "text-gray-500"
-                }
-              >
-                {formatDueDate(todo.dueDate)}
-              </span>
-            )}
-            {todo.schedule && (
-              <span className="rounded bg-purple-50 px-1.5 py-0.5 text-purple-700">
-                ↻ {describeSchedule(todo.schedule)}
-              </span>
-            )}
+        {todo.schedule && (
+          <div className="mt-0.5 text-xs text-gray-400">
+            ↻ {describeSchedule(todo.schedule)}
           </div>
         )}
         {wp && (
