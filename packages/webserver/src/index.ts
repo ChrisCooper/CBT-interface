@@ -94,6 +94,8 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// tRPC's Express adapter uses @types/express-serve-static-core v4 internally,
+// which is incompatible with the v5 types used by this project.
 app.use(
   "/trpc",
   createExpressMiddleware({
@@ -101,7 +103,7 @@ app.use(
     onError: ({ path, error }) => {
       log.error({ path: path ?? "<no-path>", error }, "tRPC error");
     },
-  }),
+  }) as unknown as express.RequestHandler,
 );
 
 const PORT = process.env.PORT ?? 3000;
