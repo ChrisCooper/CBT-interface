@@ -34,6 +34,7 @@ export function Todos() {
   const [leadTimeDays, setLeadTimeDays] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
+  const [includeUpkeep, setIncludeUpkeep] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("importance");
   const utils = trpc.useUtils();
 
@@ -91,7 +92,10 @@ export function Todos() {
   };
 
   const todos = useMemo(() => {
-    const filtered = showDueSoonOnly ? allTodos.filter(isDueSoon) : allTodos;
+    let filtered = showDueSoonOnly ? allTodos.filter(isDueSoon) : allTodos;
+    if (!includeUpkeep) {
+      filtered = filtered.filter((t) => !t.isUpkeep);
+    }
     const today = localCalendarDay(new Date());
 
     return [...filtered].sort((a, b) => {
@@ -114,7 +118,7 @@ export function Todos() {
         }
       }
     });
-  }, [allTodos, showDueSoonOnly, sortBy]);
+  }, [allTodos, showDueSoonOnly, includeUpkeep, sortBy]);
 
   const editingTodo = editingId ? allTodos.find((t) => t.id === editingId) : null;
 
@@ -124,26 +128,46 @@ export function Todos() {
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="mx-auto max-w-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showDueSoonOnly}
-                  onClick={() => setShowDueSoonOnly((v) => !v)}
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                    showDueSoonOnly ? "bg-blue-600" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
-                      showDueSoonOnly ? "translate-x-4" : "translate-x-0.5"
+              <div className="flex items-center gap-4">
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showDueSoonOnly}
+                    onClick={() => setShowDueSoonOnly((v) => !v)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                      showDueSoonOnly ? "bg-blue-600" : "bg-gray-300"
                     }`}
-                  />
-                </button>
-                Due soon only
-              </label>
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                        showDueSoonOnly ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                  Due soon only
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={includeUpkeep}
+                    onClick={() => setIncludeUpkeep((v) => !v)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                      includeUpkeep ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                        includeUpkeep ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                  Upkeep
+                </label>
+              </div>
               <div className="flex items-center gap-3">
-                {showDueSoonOnly && todos.length !== allTodos.length && (
+                {todos.length !== allTodos.length && (
                   <span className="text-xs text-gray-400">
                     {allTodos.length - todos.length} hidden
                   </span>
