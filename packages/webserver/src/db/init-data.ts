@@ -36,6 +36,16 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
   return config!;
 }
 
+interface OneOffTodo {
+  title: string;
+  priority: 1 | 2 | 3 | 4;
+}
+
+const INITIAL_ONE_OFF_TODOS: OneOffTodo[] = [
+  { title: "Kubernetes learning project", priority: 3 },
+  { title: "Sell wobble chair", priority: 4 },
+];
+
 const INITIAL_TODOS: RecurringTodo[] = [
   {
     title: "Pay rent",
@@ -71,5 +81,11 @@ export async function seedInitialTodos(db: Database) {
   for (const todo of INITIAL_TODOS) {
     await createRecurringTodo(db, todo);
   }
-  return INITIAL_TODOS.length;
+  for (const todo of INITIAL_ONE_OFF_TODOS) {
+    await db.insert(todos).values({
+      title: todo.title,
+      priority: todo.priority,
+    });
+  }
+  return INITIAL_TODOS.length + INITIAL_ONE_OFF_TODOS.length;
 }
