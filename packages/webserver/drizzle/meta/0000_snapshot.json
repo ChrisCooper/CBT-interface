@@ -1,5 +1,5 @@
 {
-  "id": "da9fde09-3966-4488-8d43-d533bbc41893",
+  "id": "2c5a1cc3-b860-41fa-b315-27ac21dee85b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -85,7 +85,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'gray'"
+          "default": "'#6b7280'"
         },
         "created_at": {
           "name": "created_at",

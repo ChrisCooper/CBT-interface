@@ -1,12 +1,15 @@
 import { useState } from "react";
-import {
-  TAG_COLORS,
-  TAG_COLOR_CLASSES,
-  type TagColor,
-} from "shared";
+import type { TagColor } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 
 type TagItem = RouterOutput["todos"]["tags"]["list"][number];
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export function TodoTags() {
   const tagsQuery = trpc.todos.tags.list.useQuery();
@@ -23,7 +26,7 @@ export function TodoTags() {
   });
 
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState<TagColor>("gray");
+  const [newColor, setNewColor] = useState<TagColor>("#6b7280");
 
   const handleCreate = () => {
     const trimmed = newName.trim();
@@ -33,7 +36,7 @@ export function TodoTags() {
       {
         onSuccess: () => {
           setNewName("");
-          setNewColor("gray");
+          setNewColor("#6b7280");
         },
       },
     );
@@ -83,7 +86,12 @@ export function TodoTags() {
                 }
               }}
             />
-            <ColorPicker value={newColor} onChange={setNewColor} />
+            <input
+              type="color"
+              value={newColor}
+              onChange={(e) => setNewColor(e.target.value)}
+              className="h-8 w-8 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+            />
             <button
               type="button"
               onClick={handleCreate}
@@ -138,8 +146,6 @@ function TagRow({
     setEditColor(tag.color as TagColor);
   };
 
-  const cls = TAG_COLOR_CLASSES[tag.color as TagColor];
-
   return (
     <li className="flex items-center gap-3 rounded-lg border bg-white px-4 py-3 shadow-sm">
       {editing ? (
@@ -157,7 +163,12 @@ function TagRow({
               if (e.key === "Escape") cancel();
             }}
           />
-          <ColorPicker value={editColor} onChange={setEditColor} />
+          <input
+            type="color"
+            value={editColor}
+            onChange={(e) => setEditColor(e.target.value)}
+            className="h-8 w-8 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+          />
           <button
             type="button"
             onClick={save}
@@ -177,7 +188,11 @@ function TagRow({
       ) : (
         <>
           <span
-            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${cls.bg} ${cls.text}`}
+            className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+            style={{
+              backgroundColor: hexToRgba(tag.color, 0.15),
+              color: tag.color,
+            }}
           >
             {tag.name}
           </span>
@@ -200,42 +215,5 @@ function TagRow({
         </>
       )}
     </li>
-  );
-}
-
-function ColorPicker({
-  value,
-  onChange,
-}: {
-  value: TagColor;
-  onChange: (color: TagColor) => void;
-}) {
-  const SWATCH_CLASSES: Record<TagColor, string> = {
-    gray: "bg-gray-400",
-    red: "bg-red-400",
-    orange: "bg-orange-400",
-    yellow: "bg-yellow-400",
-    green: "bg-green-400",
-    blue: "bg-blue-400",
-    purple: "bg-purple-400",
-    pink: "bg-pink-400",
-  };
-
-  return (
-    <div className="flex gap-1">
-      {TAG_COLORS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          title={c}
-          className={`h-6 w-6 rounded-full ${SWATCH_CLASSES[c]} transition-all ${
-            value === c
-              ? "ring-2 ring-offset-1 ring-blue-600 scale-110"
-              : "opacity-60 hover:opacity-100"
-          }`}
-        />
-      ))}
-    </div>
   );
 }

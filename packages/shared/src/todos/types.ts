@@ -113,30 +113,8 @@ export const DeleteSeriesSchema = z.object({
 });
 export type DeleteSeries = z.infer<typeof DeleteSeriesSchema>;
 
-export const TAG_COLORS = [
-  "gray",
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-  "pink",
-] as const;
-
-export const TagColorSchema = z.enum(TAG_COLORS);
+export const TagColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export type TagColor = z.infer<typeof TagColorSchema>;
-
-export const TAG_COLOR_CLASSES: Record<TagColor, { bg: string; text: string }> = {
-  gray:   { bg: "bg-gray-100",   text: "text-gray-700" },
-  red:    { bg: "bg-red-100",    text: "text-red-700" },
-  orange: { bg: "bg-orange-100", text: "text-orange-700" },
-  yellow: { bg: "bg-yellow-100", text: "text-yellow-700" },
-  green:  { bg: "bg-green-100",  text: "text-green-700" },
-  blue:   { bg: "bg-blue-100",   text: "text-blue-700" },
-  purple: { bg: "bg-purple-100", text: "text-purple-700" },
-  pink:   { bg: "bg-pink-100",   text: "text-pink-700" },
-};
 
 export const TagSchema = z.object({
   id: z.string().uuid(),

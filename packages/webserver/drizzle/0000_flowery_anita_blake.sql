@@ -9,7 +9,7 @@ CREATE TABLE "posts" (
 CREATE TABLE "tags" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
-	"color" text DEFAULT 'gray' NOT NULL,
+	"color" text DEFAULT '#6b7280' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "tags_name_unique" UNIQUE("name")
 );

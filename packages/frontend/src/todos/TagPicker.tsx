@@ -1,12 +1,15 @@
 import { useState } from "react";
-import {
-  TAG_COLOR_CLASSES,
-  TAG_COLORS,
-  type TagColor,
-} from "shared";
+import type { TagColor } from "shared";
 import { trpc, type RouterOutput } from "../trpc";
 
 type TagItem = RouterOutput["todos"]["tags"]["list"][number];
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export function TagBadge({
   tag,
@@ -15,10 +18,10 @@ export function TagBadge({
   tag: { name: string; color: TagColor };
   onRemove?: () => void;
 }) {
-  const cls = TAG_COLOR_CLASSES[tag.color];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${cls.bg} ${cls.text}`}
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: hexToRgba(tag.color, 0.15), color: tag.color }}
     >
       {tag.name}
       {onRemove && (
@@ -50,7 +53,7 @@ export function TagPicker({
   });
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState<TagColor>("gray");
+  const [newColor, setNewColor] = useState<TagColor>("#6b7280");
 
   const allTags = tagsQuery.data ?? [];
   const selectedSet = new Set(selectedIds);
@@ -72,7 +75,7 @@ export function TagPicker({
         onSuccess: (tag) => {
           onChange([...selectedIds, tag.id]);
           setNewName("");
-          setNewColor("gray");
+          setNewColor("#6b7280");
           setShowCreate(false);
         },
       },
@@ -84,17 +87,21 @@ export function TagPicker({
       <div className="flex flex-wrap gap-1.5">
         {allTags.map((tag) => {
           const isSelected = selectedSet.has(tag.id);
-          const cls = TAG_COLOR_CLASSES[tag.color as TagColor];
           return (
             <button
               key={tag.id}
               type="button"
               onClick={() => toggle(tag.id)}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${cls.bg} ${cls.text} ${
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                 isSelected
-                  ? "ring-2 ring-offset-1 ring-current"
+                  ? "ring-2 ring-offset-1"
                   : "opacity-60 hover:opacity-100"
               }`}
+              style={{
+                backgroundColor: hexToRgba(tag.color, 0.15),
+                color: tag.color,
+                ...(isSelected ? { ringColor: tag.color } : {}),
+              }}
             >
               {tag.name}
             </button>
@@ -123,17 +130,12 @@ export function TagPicker({
               }
             }}
           />
-          <select
+          <input
+            type="color"
             value={newColor}
-            onChange={(e) => setNewColor(e.target.value as TagColor)}
-            className="rounded border px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            {TAG_COLORS.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            onChange={(e) => setNewColor(e.target.value)}
+            className="h-7 w-7 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+          />
           <button
             type="button"
             onClick={handleCreate}

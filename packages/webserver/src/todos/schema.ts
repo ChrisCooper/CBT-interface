@@ -49,7 +49,7 @@ export const todos = pgTable("todos", {
 export const tags = pgTable("tags", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
-  color: text("color").$type<TagColor>().notNull().default("gray"),
+  color: text("color").$type<TagColor>().notNull().default("#6b7280"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

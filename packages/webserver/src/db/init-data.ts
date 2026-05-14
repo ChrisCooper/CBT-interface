@@ -107,8 +107,8 @@ interface InitialTag {
 }
 
 const INITIAL_TAGS: InitialTag[] = [
-  { name: "Social", color: "pink" },
-  { name: "Finances", color: "green" },
+  { name: "Social", color: "#ec4899" },
+  { name: "Finances", color: "#22c55e" },
 ];
 
 const TAG_ASSOCIATIONS: Record<string, string[]> = {
