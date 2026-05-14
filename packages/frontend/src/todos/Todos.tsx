@@ -12,6 +12,14 @@ import {
 
 type TodoItem = RouterOutput["todos"]["list"][number];
 
+type SortOption = "importance" | "priority" | "dueDate";
+
+const SORT_LABELS: Record<SortOption, string> = {
+  importance: "Importance",
+  priority: "Priority Level",
+  dueDate: "Due Date",
+};
+
 function todayIso(): string {
   return toIsoDate(localCalendarDay(new Date()));
 }
@@ -26,6 +34,7 @@ export function Todos() {
   const [leadTimeDays, setLeadTimeDays] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDueSoonOnly, setShowDueSoonOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("importance");
   const utils = trpc.useUtils();
 
   const todosQuery = trpc.todos.list.useQuery();
@@ -82,9 +91,30 @@ export function Todos() {
   };
 
   const todos = useMemo(() => {
-    if (!showDueSoonOnly) return allTodos;
-    return allTodos.filter(isDueSoon);
-  }, [allTodos, showDueSoonOnly]);
+    const filtered = showDueSoonOnly ? allTodos.filter(isDueSoon) : allTodos;
+    const today = localCalendarDay(new Date());
+
+    return [...filtered].sort((a, b) => {
+      // Completed items always sink to the bottom
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+
+      switch (sortBy) {
+        case "importance": {
+          const wpA = computeWeightedPriority(a.priority as Priority, a.dueDate, a.leadTimeDays, today);
+          const wpB = computeWeightedPriority(b.priority as Priority, b.dueDate, b.leadTimeDays, today);
+          return (wpB?.weightedPriority ?? 0) - (wpA?.weightedPriority ?? 0);
+        }
+        case "priority":
+          return a.priority - b.priority;
+        case "dueDate": {
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return a.dueDate.localeCompare(b.dueDate);
+        }
+      }
+    });
+  }, [allTodos, showDueSoonOnly, sortBy]);
 
   const editingTodo = editingId ? allTodos.find((t) => t.id === editingId) : null;
 
@@ -112,11 +142,27 @@ export function Todos() {
                 </button>
                 Due soon only
               </label>
-              {showDueSoonOnly && todos.length !== allTodos.length && (
-                <span className="text-xs text-gray-400">
-                  {allTodos.length - todos.length} hidden
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {showDueSoonOnly && todos.length !== allTodos.length && (
+                  <span className="text-xs text-gray-400">
+                    {allTodos.length - todos.length} hidden
+                  </span>
+                )}
+                <label className="flex items-center gap-1.5 text-sm text-gray-600">
+                  Sort:
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="rounded border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+                      <option key={key} value={key}>
+                        {SORT_LABELS[key]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
             {todosQuery.isLoading ? (
               <p className="py-20 text-center text-gray-400">Loading…</p>
