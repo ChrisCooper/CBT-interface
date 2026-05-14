@@ -61,12 +61,13 @@ const INITIAL_TODOS: RecurringTodo[] = [
     priority: 1,
     schedule: { type: "day_of_month", dayOfMonth: 12 },
     leadTimeDays: 1,
-    dueAfterDays: 1,
   },
   {
     title: "Trim beard",
     priority: 2,
     schedule: { type: "interval", intervalDays: 4 },
+    leadTimeDays: 1,
+    dueAfterDays: 1,
   },
   {
     title: "Replace water filter",
@@ -80,12 +81,13 @@ const INITIAL_TODOS: RecurringTodo[] = [
     priority: 2,
     schedule: { type: "day_of_year", month: 6, dayOfMonth: 17 },
     leadTimeDays: 20,
-    dueAfterDays: 12,
   },
   {
     title: "Water plants",
     priority: 2,
     schedule: { type: "interval", intervalDays: 14 },
+    leadTimeDays: 7,
+    dueAfterDays: 3,
   },
 ];
 
