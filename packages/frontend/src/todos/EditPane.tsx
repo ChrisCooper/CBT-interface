@@ -27,6 +27,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
     fromSchedule(todo.schedule),
   );
+  const [dueDate, setDueDate] = useState<string>(todo.dueDate ?? "");
   const [leadTimeDays, setLeadTimeDays] = useState<number>(
     todo.leadTimeDays ?? 0,
   );
@@ -35,9 +36,10 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
   useEffect(() => {
     setTitle(todo.title);
     setPriority(todo.priority as Priority);
+    setDueDate(todo.dueDate ?? "");
     setScheduleForm(fromSchedule(todo.schedule));
     setLeadTimeDays(todo.leadTimeDays ?? 0);
-  }, [todo.id, todo.title, todo.priority, todo.schedule, todo.leadTimeDays]);
+  }, [todo.id, todo.title, todo.priority, todo.dueDate, todo.schedule, todo.leadTimeDays]);
 
   const updateTodo = trpc.todos.update.useMutation({
     onSuccess: () => {
@@ -55,9 +57,12 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
 
   const leadTimeChanged = leadTimeDays !== (todo.leadTimeDays ?? 0);
 
+  const dueDateChanged = dueDate !== (todo.dueDate ?? "");
+
   const dirty =
     title.trim() !== todo.title ||
     priority !== todo.priority ||
+    dueDateChanged ||
     scheduleChanged ||
     leadTimeChanged;
 
@@ -69,6 +74,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
     const changes: Changes = { id: todo.id };
     if (trimmed !== todo.title) changes.title = trimmed;
     if (priority !== todo.priority) changes.priority = priority;
+    if (dueDateChanged) changes.dueDate = dueDate || null;
     if (scheduleChanged) changes.schedule = nextSchedule;
     if (leadTimeChanged) changes.leadTimeDays = leadTimeDays || null;
 
@@ -159,6 +165,31 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
         </div>
 
         <div>
+          <label htmlFor="edit-due-date" className="mb-1 block text-xs font-medium text-gray-500">
+            Due Date
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="edit-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="flex-1 rounded-lg border px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {dueDate && (
+              <button
+                type="button"
+                onClick={() => setDueDate("")}
+                className="rounded-lg border px-2.5 py-2 text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                title="Clear due date"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div>
           <label className="mb-2 block text-xs font-medium text-gray-500">
             Schedule
           </label>
@@ -226,6 +257,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
               onClick={() => {
                 setTitle(todo.title);
                 setPriority(todo.priority as Priority);
+                setDueDate(todo.dueDate ?? "");
                 setScheduleForm(fromSchedule(todo.schedule));
                 setLeadTimeDays(todo.leadTimeDays ?? 0);
               }}

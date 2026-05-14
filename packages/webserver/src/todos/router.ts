@@ -127,7 +127,11 @@ export function createTodosRouter(db: Database) {
         if (!input.schedule) {
           const rows = await db
             .insert(todos)
-            .values({ title: input.title, priority: input.priority })
+            .values({
+              title: input.title,
+              priority: input.priority,
+              dueDate: input.dueDate ?? null,
+            })
             .returning();
           const out = rows[0]!;
           return {
@@ -161,7 +165,7 @@ export function createTodosRouter(db: Database) {
     update: t.procedure
       .input(UpdateTodoSchema)
       .mutation(async ({ input }) => {
-        const { id, schedule, leadTimeDays, ...fields } = input;
+        const { id, dueDate, schedule, leadTimeDays, ...fields } = input;
         log.info({ id, ...fields, scheduleChange: schedule !== undefined }, "todos.update called");
 
         const existingRows = await db
@@ -179,6 +183,7 @@ export function createTodosRouter(db: Database) {
           instanceUpdate.completed = fields.completed;
           instanceUpdate.completedAt = fields.completed ? new Date() : null;
         }
+        if (dueDate !== undefined) instanceUpdate.dueDate = dueDate;
 
         if (Object.keys(instanceUpdate).length > 0) {
           await db.update(todos).set(instanceUpdate).where(eq(todos.id, id));

@@ -12,9 +12,18 @@ import {
 
 type TodoItem = RouterOutput["todos"]["list"][number];
 
+function todayIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function Todos() {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>(3);
+  const [dueDate, setDueDate] = useState(todayIso);
   const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
     fromSchedule(null),
   );
@@ -53,10 +62,12 @@ export function Todos() {
     createTodo.mutate({
       title: trimmed,
       priority,
+      ...(dueDate ? { dueDate } : {}),
       ...(schedule ? { schedule } : {}),
       ...(schedule && leadTimeDays > 0 ? { leadTimeDays } : {}),
     });
     setTitle("");
+    setDueDate(todayIso());
     setScheduleForm(fromSchedule(null));
     setLeadTimeDays(0);
     setShowCreateOptions(false);
@@ -169,6 +180,13 @@ export function Todos() {
                   </option>
                 ))}
               </select>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                disabled={createTodo.isPending}
+                className="rounded-full border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
               <button
                 type="button"
                 onClick={() => setShowCreateOptions((v) => !v)}

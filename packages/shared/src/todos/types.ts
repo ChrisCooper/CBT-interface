@@ -63,6 +63,7 @@ export type Todo = z.infer<typeof TodoSchema>;
 export const CreateTodoSchema = z.object({
   title: z.string().min(1).max(500),
   priority: PrioritySchema,
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   schedule: ScheduleSchema.optional(),
   leadTimeDays: z.number().int().min(0).max(365).optional(),
 });
@@ -74,6 +75,8 @@ export const UpdateTodoSchema = z
     title: z.string().min(1).max(500).optional(),
     priority: PrioritySchema.optional(),
     completed: z.boolean().optional(),
+    // undefined = no change; string = set; null = remove.
+    dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     // undefined = no change; Schedule = set/update; null = remove recurrence.
     schedule: ScheduleSchema.nullable().optional(),
     // undefined = no change; number = set; null = remove.
@@ -84,6 +87,7 @@ export const UpdateTodoSchema = z
       v.title !== undefined ||
       v.priority !== undefined ||
       v.completed !== undefined ||
+      v.dueDate !== undefined ||
       v.schedule !== undefined ||
       v.leadTimeDays !== undefined,
     { message: "At least one field to update must be provided" },
