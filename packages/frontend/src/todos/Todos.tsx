@@ -69,18 +69,20 @@ export function Todos() {
 
   const allTodos = todosQuery.data ?? [];
 
+  const isDueSoon = (todo: TodoItem): boolean => {
+    if (todo.completed) return true;
+    if (!todo.dueDate || todo.leadTimeDays == null) return true;
+    const due = fromIsoDate(todo.dueDate);
+    const todayUtc = localCalendarDay(new Date());
+    const daysUntilDue = Math.round(
+      (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    return daysUntilDue <= todo.leadTimeDays;
+  };
+
   const todos = useMemo(() => {
     if (!showDueSoonOnly) return allTodos;
-    const todayUtc = localCalendarDay(new Date());
-    return allTodos.filter((todo) => {
-      if (todo.completed) return true;
-      if (!todo.dueDate || todo.leadTimeDays == null) return true;
-      const due = fromIsoDate(todo.dueDate);
-      const daysUntilDue = Math.round(
-        (due.getTime() - todayUtc.getTime()) / (24 * 60 * 60 * 1000),
-      );
-      return daysUntilDue <= todo.leadTimeDays;
-    });
+    return allTodos.filter(isDueSoon);
   }, [allTodos, showDueSoonOnly]);
 
   const editingTodo = editingId ? allTodos.find((t) => t.id === editingId) : null;
@@ -128,6 +130,7 @@ export function Todos() {
                     key={todo.id}
                     todo={todo}
                     selected={todo.id === editingId}
+                    dimmed={!showDueSoonOnly && !isDueSoon(todo)}
                     onToggle={(completed) =>
                       updateTodo.mutate({ id: todo.id, completed })
                     }
@@ -238,12 +241,14 @@ function formatDueDate(dueDate: string): string {
 function TodoRow({
   todo,
   selected,
+  dimmed,
   onToggle,
   onClick,
   onDelete,
 }: {
   todo: TodoItem;
   selected: boolean;
+  dimmed?: boolean;
   onToggle: (completed: boolean) => void;
   onClick: () => void;
   onDelete: () => void;
@@ -272,7 +277,7 @@ function TodoRow({
         selected
           ? "border-blue-300 bg-blue-50 ring-1 ring-blue-300"
           : "bg-white hover:bg-gray-50"
-      }`}
+      } ${dimmed ? "opacity-50" : ""}`}
     >
       <input
         type="checkbox"
