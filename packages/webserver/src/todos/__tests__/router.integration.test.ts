@@ -41,21 +41,34 @@ describe("todos router", () => {
     });
   });
 
-  describe("todos.setCompleted", () => {
+  describe("todos.update", () => {
     test("toggles completion state", async ({ trpc }) => {
       const created = await trpc.todos.create({ title: "task", priority: 3 });
 
-      const completed = await trpc.todos.setCompleted({
+      const completed = await trpc.todos.update({
         id: created.id,
         completed: true,
       });
       expect(completed?.completed).toBe(true);
 
-      const uncompleted = await trpc.todos.setCompleted({
+      const uncompleted = await trpc.todos.update({
         id: created.id,
         completed: false,
       });
       expect(uncompleted?.completed).toBe(false);
+    });
+
+    test("updates title and priority", async ({ trpc }) => {
+      const created = await trpc.todos.create({ title: "old title", priority: 4 });
+
+      const updated = await trpc.todos.update({
+        id: created.id,
+        title: "new title",
+        priority: 1,
+      });
+      expect(updated?.title).toBe("new title");
+      expect(updated?.priority).toBe(1);
+      expect(updated?.completed).toBe(false);
     });
   });
 

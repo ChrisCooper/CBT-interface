@@ -36,10 +36,17 @@ export type Todo = z.infer<typeof TodoSchema>;
 export const CreateTodoSchema = TodoSchema.pick({ title: true, priority: true });
 export type CreateTodo = z.infer<typeof CreateTodoSchema>;
 
-export const UpdateTodoSchema = z.object({
-  id: z.string().uuid(),
-  completed: z.boolean(),
-});
+export const UpdateTodoSchema = z
+  .object({
+    id: z.string().uuid(),
+    title: z.string().min(1).max(500).optional(),
+    priority: PrioritySchema.optional(),
+    completed: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.title !== undefined || v.priority !== undefined || v.completed !== undefined,
+    { message: "At least one field to update must be provided" },
+  );
 export type UpdateTodo = z.infer<typeof UpdateTodoSchema>;
 
 export const DeleteTodoSchema = z.object({

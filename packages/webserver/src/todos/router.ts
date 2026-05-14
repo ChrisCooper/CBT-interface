@@ -32,14 +32,15 @@ export function createTodosRouter(db: Database) {
         return rows[0]!;
       }),
 
-    setCompleted: t.procedure
+    update: t.procedure
       .input(UpdateTodoSchema)
       .mutation(async ({ input }) => {
-        log.info({ id: input.id, completed: input.completed }, "todos.setCompleted called");
+        const { id, ...fields } = input;
+        log.info({ id, ...fields }, "todos.update called");
         const rows = await db
           .update(todos)
-          .set({ completed: input.completed })
-          .where(eq(todos.id, input.id))
+          .set(fields)
+          .where(eq(todos.id, id))
           .returning();
         return rows[0] ?? null;
       }),
