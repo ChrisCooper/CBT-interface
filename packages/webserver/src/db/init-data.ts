@@ -10,6 +10,7 @@ interface RecurringTodo {
   priority: 1 | 2 | 3 | 4;
   schedule: Schedule;
   leadTimeDays?: number;
+  dueAfterDays?: number;
 }
 
 async function createRecurringTodo(db: Database, todo: RecurringTodo) {
@@ -23,7 +24,14 @@ async function createRecurringTodo(db: Database, todo: RecurringTodo) {
     })
     .returning();
 
-  const dueDate = firstDueDate(todo.schedule, new Date());
+  let dueDate: Date;
+  if (todo.dueAfterDays != null) {
+    const today = new Date();
+    dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + todo.dueAfterDays);
+  } else {
+    dueDate = firstDueDate(todo.schedule, new Date());
+  }
 
   await db.insert(todos).values({
     configId: config!.id,
@@ -52,27 +60,30 @@ const INITIAL_TODOS: RecurringTodo[] = [
     priority: 1,
     schedule: { type: "day_of_month", dayOfMonth: 12 },
     leadTimeDays: 1,
+    dueAfterDays: 1,
   },
   {
     title: "Trim beard",
-    priority: 4,
+    priority: 2,
     schedule: { type: "interval", intervalDays: 4 },
   },
   {
     title: "Replace water filter",
-    priority: 3,
+    priority: 4,
     schedule: { type: "interval", intervalDays: 80 },
     leadTimeDays: 10,
+    dueAfterDays: 6,
   },
   {
     title: "Buy birthday gift for mom",
     priority: 2,
     schedule: { type: "day_of_year", month: 6, dayOfMonth: 17 },
     leadTimeDays: 20,
+    dueAfterDays: 12,
   },
   {
     title: "Water plants",
-    priority: 3,
+    priority: 2,
     schedule: { type: "interval", intervalDays: 14 },
   },
 ];

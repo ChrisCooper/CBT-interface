@@ -306,6 +306,20 @@ function TodoRow({
         onClick={(e) => e.stopPropagation()}
         className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
       />
+      <span
+        className={`-mx-1 shrink-0 text-xl leading-none ${
+          todo.priority === 1
+            ? "text-red-500"
+            : todo.priority === 2
+              ? "text-yellow-500"
+              : todo.priority === 3
+                ? "text-green-500"
+                : "text-blue-400"
+        }`}
+        title={PRIORITY_LABELS[todo.priority as Priority]}
+      >
+        &#9873;
+      </span>
       <div className="min-w-0 flex-1">
         <div
           className={`truncate text-sm ${
@@ -338,9 +352,6 @@ function TodoRow({
           </div>
         )}
       </div>
-      <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-        {PRIORITY_LABELS[todo.priority as Priority]}
-      </span>
       <button
         type="button"
         onClick={(e) => {

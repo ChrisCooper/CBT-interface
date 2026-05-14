@@ -148,7 +148,7 @@ export function EditPane({ todo, onClose }: EditPaneProps) {
               >
                 <span
                   className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${
-                    p === 1 ? "bg-red-500" : p === 2 ? "bg-orange-400" : p === 3 ? "bg-yellow-400" : "bg-gray-300"
+                    p === 1 ? "bg-red-500" : p === 2 ? "bg-yellow-500" : p === 3 ? "bg-green-500" : "bg-blue-400"
                   }`}
                 />
                 <div className="min-w-0">

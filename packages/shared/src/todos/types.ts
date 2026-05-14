@@ -11,17 +11,17 @@ export const PrioritySchema = z.union([
 export type Priority = z.infer<typeof PrioritySchema>;
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
-  1: "Life Support",
-  2: "Essential",
-  3: "Important",
-  4: "Useful",
+  1: "Critical",
+  2: "Important",
+  3: "Useful",
+  4: "Chill",
 };
 
 export const PRIORITY_DESCRIPTIONS: Record<Priority, string> = {
   1: "Absolutely essential — missing this has serious consequences",
-  2: "Should only be missed in extreme circumstances",
-  3: "Should be done if at all possible",
-  4: "Ideal but has some flexibility",
+  2: "Should be done if at all possible",
+  3: "Ideal but has some flexibility",
+  4: "Low-stakes — do it whenever",
 };
 
 /**
