@@ -1,10 +1,24 @@
-import { eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { firstDueDate, toIsoDate, type Schedule, type TagColor } from "shared";
 import type * as schema from "./schema.js";
 import { todoConfigs, todos, tags, todoTags } from "../todos/schema.js";
 
 type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
+
+interface InitialTag {
+  name: string;
+  color: TagColor;
+}
+
+const TAG_SOCIAL = "social";
+const TAG_FINANCES = "finances";
+
+const INITIAL_TAGS = {
+  [TAG_SOCIAL]: { name: "Social", color: "#ec4899" },
+  [TAG_FINANCES]: { name: "Finances", color: "#22c55e" },
+} as const satisfies Record<string, InitialTag>;
+
+type TagKey = keyof typeof INITIAL_TAGS;
 
 interface RecurringTodo {
   title: string;
@@ -13,6 +27,7 @@ interface RecurringTodo {
   isUpkeep?: boolean;
   leadTimeDays?: number;
   dueAfterDays?: number;
+  tagIds?: TagKey[];
 }
 
 async function createRecurringTodo(db: Database, todo: RecurringTodo) {
@@ -54,6 +69,7 @@ interface OneOffTodo {
   priority: 1 | 2 | 3 | 4;
   dueAfterDays?: number;
   leadTimeDays?: number;
+  tagIds?: TagKey[];
 }
 
 const INITIAL_ONE_OFF_TODOS: OneOffTodo[] = [
@@ -71,6 +87,7 @@ const INITIAL_TODOS: RecurringTodo[] = [
     schedule: { type: "day_of_month", dayOfMonth: 12 },
     isUpkeep: true,
     leadTimeDays: 1,
+    tagIds: [TAG_FINANCES],
   },
   {
     title: "Trim beard",
@@ -101,6 +118,7 @@ const INITIAL_TODOS: RecurringTodo[] = [
     priority: 2,
     schedule: { type: "day_of_year", month: 6, dayOfMonth: 17 },
     leadTimeDays: 20,
+    tagIds: [TAG_SOCIAL],
   },
   {
     title: "Water plants",
@@ -112,37 +130,18 @@ const INITIAL_TODOS: RecurringTodo[] = [
   },
 ];
 
-interface InitialTag {
-  name: string;
-  color: TagColor;
-}
-
-const INITIAL_TAGS: InitialTag[] = [
-  { name: "Social", color: "#ec4899" },
-  { name: "Finances", color: "#22c55e" },
-];
-
-const TAG_ASSOCIATIONS: Record<string, string[]> = {
-  "Buy birthday gift for mom": ["Social"],
-  "Pay rent": ["Finances"],
-};
-
 export async function seedInitialTodos(db: Database) {
-  const tagIdsByName = new Map<string, string>();
-  for (const tag of INITIAL_TAGS) {
+  const tagIdsByKey = new Map<TagKey, string>();
+  for (const [key, tag] of Object.entries(INITIAL_TAGS)) {
     const [row] = await db.insert(tags).values(tag).returning();
-    tagIdsByName.set(row!.name, row!.id);
+    tagIdsByKey.set(key as TagKey, row!.id);
   }
 
   for (const todo of INITIAL_TODOS) {
     const { todo: instance } = await createRecurringTodo(db, todo);
-    const assocTags = TAG_ASSOCIATIONS[todo.title];
-    if (assocTags) {
-      for (const tagName of assocTags) {
-        const tagId = tagIdsByName.get(tagName);
-        if (tagId) {
-          await db.insert(todoTags).values({ todoId: instance.id, tagId });
-        }
+    if (todo.tagIds) {
+      for (const tagKey of todo.tagIds) {
+        await db.insert(todoTags).values({ todoId: instance.id, tagId: tagIdsByKey.get(tagKey)! });
       }
     }
   }
